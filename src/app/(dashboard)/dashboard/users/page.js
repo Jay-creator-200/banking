@@ -291,7 +291,7 @@ export default function UsersPage() {
       { header: 'Branch Code', cellValue: (row) => row.branchId?.branchCode || 'None' },
       { header: 'Status', accessor: 'status' },
     ];
-    exportToCSV(users, cols, 'Apex-Users-Export.csv');
+    exportToCSV(users, cols, 'Noble-Users-Export.csv');
   };
 
   const columns = [
@@ -497,7 +497,7 @@ export default function UsersPage() {
                 className={`w-full px-3 py-2 text-sm rounded-xl border bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 ${
                   formErrors.email ? 'border-rose-350 focus:ring-rose-200' : 'border-slate-200 dark:border-slate-800 focus:ring-indigo-100'
                 }`}
-                placeholder="john.doe@apexbank.in"
+                placeholder="john.doe@noblebank.coop"
                 required
               />
               {formErrors.email && <p className="text-xs text-rose-600 mt-1 font-medium">{formErrors.email}</p>}

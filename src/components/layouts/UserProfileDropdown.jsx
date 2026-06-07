@@ -63,7 +63,7 @@ export function UserProfileDropdown() {
               {user?.fullName || 'Active User'}
             </p>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-1">
-              {user?.email || 'user@apexbank.in'}
+              {user?.email || 'user@noblebank.coop'}
             </p>
           </div>
 

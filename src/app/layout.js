@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Apex Co-operative Banking Suite",
+  title: "Noble Cooperative Bank",
   description: "Enterprise-grade core administration platform for co-operative banking societies, credit unions, and microfinance organizations.",
 };
 

@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  NAME: 'Apex Cooperative Banking Platform',
+  NAME: 'Noble Cooperative Bank',
   VERSION: '0.1.0',
   CURRENCY: {
     CODE: 'INR',

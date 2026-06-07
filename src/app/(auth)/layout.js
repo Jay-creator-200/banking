@@ -18,10 +18,10 @@ export default function AuthLayout({ children }) {
         {/* Top Logo */}
         <div className="flex items-center gap-3 relative z-10 select-none">
           <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-indigo-600/20">
-            A
+            N
           </div>
           <span className="font-bold text-white text-lg tracking-wide">
-            Apex Cooperative Bank
+            Noble Cooperative Bank
           </span>
         </div>
 
@@ -37,7 +37,7 @@ export default function AuthLayout({ children }) {
 
         {/* Bottom Metadata */}
         <div className="relative z-10 text-[10px] text-slate-500 font-bold tracking-wider uppercase">
-          Apex Banking Solutions • Core System Platform
+          Noble Banking Solutions • Core System Platform
         </div>
       </div>
 
@@ -47,10 +47,10 @@ export default function AuthLayout({ children }) {
           {/* Logo indicator shown only on mobile screen widths */}
           <div className="flex flex-col items-center justify-center lg:hidden mb-8 text-center select-none animate-in slide-in-from-top duration-300">
             <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl mb-3 shadow-sm">
-              A
+              N
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Apex Cooperative Bank
+              Noble Cooperative Bank
             </h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-1">
               Core Core Banking Solution

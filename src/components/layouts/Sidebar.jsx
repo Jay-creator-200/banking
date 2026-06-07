@@ -16,7 +16,12 @@ import {
   History,
   Building2,
   Key,
-  ShieldAlert
+  ShieldAlert,
+  RotateCcw,
+  FolderTree,
+  ArrowRightLeft,
+  Vault,
+  FileSpreadsheet
 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes.js';
 import { APP_CONFIG } from '@/constants/app-config.js';
@@ -27,10 +32,25 @@ const navigationGroups = [
     items: [
       { label: 'Dashboard', href: ROUTES.DASHBOARD.HOME, icon: LayoutDashboard },
       { label: 'Members', href: ROUTES.DASHBOARD.MEMBERS, icon: Users },
-      { label: 'Accounts', href: ROUTES.DASHBOARD.ACCOUNTS, icon: Wallet },
+      { label: 'Member Reports', href: ROUTES.DASHBOARD.MEMBER_REPORTS, icon: FileText },
+      { label: 'Savings Accounts', href: ROUTES.DASHBOARD.SAVINGS_ACCOUNTS, icon: Wallet },
       { label: 'Loans', href: ROUTES.DASHBOARD.LOANS, icon: Landmark },
       { label: 'Teller Ops', href: ROUTES.DASHBOARD.TELLER, icon: Briefcase },
+      { label: 'Cash Transfers', href: ROUTES.DASHBOARD.TELLER_TRANSFERS, icon: ArrowRightLeft },
+      { label: 'Vault', href: ROUTES.DASHBOARD.TELLER_VAULT, icon: Vault },
+      { label: 'Teller Reports', href: ROUTES.DASHBOARD.TELLER_REPORTS, icon: FileSpreadsheet },
       { label: 'Workflows', href: ROUTES.DASHBOARD.WORKFLOWS, icon: ShieldCheck },
+    ]
+  },
+  {
+    title: 'Financial Core',
+    items: [
+      { label: 'Transactions', href: ROUTES.DASHBOARD.TRANSACTIONS, icon: Briefcase },
+      { label: 'Reversals', href: ROUTES.DASHBOARD.REVERSALS, icon: RotateCcw },
+      { label: 'Approvals', href: ROUTES.DASHBOARD.APPROVALS, icon: ShieldCheck },
+      { label: 'Chart of Accounts', href: ROUTES.DASHBOARD.ACCOUNT_HEADS, icon: FolderTree },
+      { label: 'Journal Vouchers', href: ROUTES.DASHBOARD.JOURNAL_VOUCHERS, icon: FileText },
+      { label: 'General Ledger', href: ROUTES.DASHBOARD.LEDGER, icon: History },
     ]
   },
   {
@@ -70,7 +90,7 @@ export function Sidebar({ isOpen, setIsOpen }) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/80 shrink-0">
         <div className="flex items-center gap-2.5 overflow-hidden">
           <div className="w-8 h-8 rounded-lg bg-indigo-650 flex items-center justify-center shrink-0 text-white font-bold text-base shadow-sm shadow-indigo-550">
-            A
+            N
           </div>
           {isOpen && (
             <span className="font-bold text-white text-sm whitespace-nowrap tracking-wide animate-in fade-in duration-200">

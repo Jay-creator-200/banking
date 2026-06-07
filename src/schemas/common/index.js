@@ -52,8 +52,10 @@ export const paginationSchema = z.object({
   sort: z.string().trim().default('-createdAt'),
 });
 
-// Primary ObjectId Schema (Validates Mongoose format)
-export const objectIdSchema = z
-  .string()
-  .trim()
-  .regex(/^[0-9a-fA-F]{24}$/, { message: 'Invalid database identifier' });
+// Primary ObjectId Schema (Validates Mongoose format, pre-processing ObjectId instances into hex strings)
+export const objectIdSchema = z.preprocess((val) => {
+  if (val && typeof val === 'object' && typeof val.toString === 'function') {
+    return val.toString();
+  }
+  return val;
+}, z.string().trim().regex(/^[0-9a-fA-F]{24}$/, { message: 'Invalid database identifier' }));

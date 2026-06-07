@@ -102,12 +102,12 @@ async function seed() {
       { branchCode: 'HO' },
       {
         branchName: 'Head Office',
-        address: '121, Apex Banking Towers, MG Road',
+        address: '121, Noble Cooperative Bank Towers, MG Road',
         city: 'Pune',
         state: 'Maharashtra',
         pincode: '411001',
         contactNumber: '9876543210',
-        email: 'headoffice@apexbank.in',
+        email: 'headoffice@noblebank.coop',
         status: 'ACTIVE',
         isDeleted: false
       },
@@ -163,8 +163,8 @@ async function seed() {
       const hashedPassword = await bcrypt.hash('SecureP@ss1', salt);
 
       const userDoc = await User.create({
-        fullName: 'Apex Super Administrator',
-        email: 'admin@apexbank.in',
+        fullName: 'Noble Super Administrator',
+        email: 'admin@noblebank.coop',
         mobile: '9999999999',
         username: 'superadmin',
         employeeCode: 'EMP-0001',

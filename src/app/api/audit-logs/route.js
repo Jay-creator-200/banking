@@ -36,6 +36,11 @@ export async function GET(req) {
       filter.actionName = actionName;
     }
 
+    const referenceId = searchParams.get('referenceId');
+    if (referenceId) {
+      filter.referenceId = referenceId;
+    }
+
     const result = await auditLogService.findMany(filter, {
       page,
       limit,

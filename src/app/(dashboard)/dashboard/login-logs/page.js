@@ -85,7 +85,7 @@ export default function LoginLogsPage() {
       { header: 'User Agent', accessor: 'userAgent' },
       { header: 'Status', accessor: 'loginStatus' },
     ];
-    exportToCSV(logs, cols, 'Apex-LoginLogs-Export.csv');
+    exportToCSV(logs, cols, 'Noble-LoginLogs-Export.csv');
   };
 
   const columns = [

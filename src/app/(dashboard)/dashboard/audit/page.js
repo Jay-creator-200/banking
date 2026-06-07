@@ -117,7 +117,7 @@ export default function AuditLogsPage() {
       { header: 'IP Address', accessor: 'ipAddress' },
       { header: 'User Agent', accessor: 'userAgent' },
     ];
-    exportToCSV(logs, cols, 'Apex-AuditLogs-Export.csv');
+    exportToCSV(logs, cols, 'Noble-AuditLogs-Export.csv');
   };
 
   const columns = [

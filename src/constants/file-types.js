@@ -16,9 +16,12 @@ export const FOLDERS = {
   STATEMENTS: 'statements',
 };
 
-export default {
+const fileTypes = {
   MAX_FILE_SIZE_MB,
   ALLOWED_IMAGE_TYPES,
   ALLOWED_DOCUMENT_TYPES,
   FOLDERS,
 };
+
+export default fileTypes;
+

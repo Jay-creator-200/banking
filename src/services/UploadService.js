@@ -123,4 +123,7 @@ export class UploadService {
   }
 }
 
-export default new UploadService();
+const uploadServiceInstance = new UploadService();
+export default uploadServiceInstance;
+
+

@@ -45,7 +45,7 @@
   --ring: #6366f1;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

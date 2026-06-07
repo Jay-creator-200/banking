@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 
 /**
  * Premium profile navigation dropdown showing operator metadata, email links, and settings anchors.
  */
 export function UserProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const { data: session } = useSession();
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -21,21 +23,33 @@ export function UserProfileDropdown() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const user = session?.user;
+  const initials = user?.fullName
+    ? user.fullName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : 'U';
+
+  const roleLabel = user?.roleCode ? user.roleCode.replace(/_/g, ' ') : 'Employee';
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2.5 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-900/60 rounded-xl transition-all text-left cursor-pointer"
       >
-        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0 border border-indigo-200/20">
-          JD
+        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0 border border-indigo-200/20 uppercase">
+          {initials}
         </div>
         <div className="hidden md:block shrink-0">
           <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-none">
-            John Doe
+            {user?.fullName || 'Active User'}
           </p>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1">
-            Branch Manager
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 uppercase tracking-wider">
+            {roleLabel}
           </p>
         </div>
         <ChevronDown className="w-4 h-4 text-slate-400 hidden md:block shrink-0" />
@@ -46,10 +60,10 @@ export function UserProfileDropdown() {
           {/* User metadata header */}
           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/10">
             <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-              John Doe
+              {user?.fullName || 'Active User'}
             </p>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-1">
-              john.doe@apexbank.coop
+              {user?.email || 'user@apexbank.in'}
             </p>
           </div>
 
@@ -63,14 +77,6 @@ export function UserProfileDropdown() {
               <User className="w-4 h-4 text-slate-400 shrink-0" />
               <span>My Profile</span>
             </Link>
-            <Link
-              href="/dashboard/settings"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl transition-all font-semibold"
-            >
-              <Settings className="w-4 h-4 text-slate-400 shrink-0" />
-              <span>Account Settings</span>
-            </Link>
           </div>
 
           {/* Sign out separator */}
@@ -78,7 +84,7 @@ export function UserProfileDropdown() {
             <button
               onClick={() => {
                 setIsOpen(false);
-                alert('Sign out triggered. Auth.js implementation will follow in next phase.');
+                signOut({ callbackUrl: '/login' });
               }}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-all font-bold cursor-pointer"
             >
@@ -93,3 +99,4 @@ export function UserProfileDropdown() {
 }
 
 export default UserProfileDropdown;
+

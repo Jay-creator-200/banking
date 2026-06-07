@@ -13,6 +13,10 @@ export const ROUTES = {
     REPORTS: '/dashboard/reports',
     SETTINGS: '/dashboard/settings',
     AUDIT: '/dashboard/audit',
+    USERS: '/dashboard/users',
+    ROLES: '/dashboard/roles',
+    BRANCHES: '/dashboard/branches',
+    LOGIN_LOGS: '/dashboard/login-logs',
   },
 };
 

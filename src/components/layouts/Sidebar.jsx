@@ -14,20 +14,40 @@ import {
   ChevronLeft,
   Briefcase,
   History,
+  Building2,
+  Key,
+  ShieldAlert
 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes.js';
 import { APP_CONFIG } from '@/constants/app-config.js';
 
-const navigationItems = [
-  { label: 'Dashboard', href: ROUTES.DASHBOARD.HOME, icon: LayoutDashboard },
-  { label: 'Members', href: ROUTES.DASHBOARD.MEMBERS, icon: Users },
-  { label: 'Accounts', href: ROUTES.DASHBOARD.ACCOUNTS, icon: Wallet },
-  { label: 'Loans', href: ROUTES.DASHBOARD.LOANS, icon: Landmark },
-  { label: 'Teller Ops', href: ROUTES.DASHBOARD.TELLER, icon: Briefcase },
-  { label: 'Workflows', href: ROUTES.DASHBOARD.WORKFLOWS, icon: ShieldCheck },
-  { label: 'Audit Logs', href: ROUTES.DASHBOARD.AUDIT, icon: History },
-  { label: 'Reports', href: ROUTES.DASHBOARD.REPORTS, icon: FileText },
-  { label: 'Settings', href: ROUTES.DASHBOARD.SETTINGS, icon: Settings },
+const navigationGroups = [
+  {
+    title: 'Core Platform',
+    items: [
+      { label: 'Dashboard', href: ROUTES.DASHBOARD.HOME, icon: LayoutDashboard },
+      { label: 'Members', href: ROUTES.DASHBOARD.MEMBERS, icon: Users },
+      { label: 'Accounts', href: ROUTES.DASHBOARD.ACCOUNTS, icon: Wallet },
+      { label: 'Loans', href: ROUTES.DASHBOARD.LOANS, icon: Landmark },
+      { label: 'Teller Ops', href: ROUTES.DASHBOARD.TELLER, icon: Briefcase },
+      { label: 'Workflows', href: ROUTES.DASHBOARD.WORKFLOWS, icon: ShieldCheck },
+    ]
+  },
+  {
+    title: 'Access Control',
+    items: [
+      { label: 'Employees', href: ROUTES.DASHBOARD.USERS, icon: Users },
+      { label: 'Roles & Authority', href: ROUTES.DASHBOARD.ROLES, icon: Key },
+      { label: 'Branch Registry', href: ROUTES.DASHBOARD.BRANCHES, icon: Building2 },
+    ]
+  },
+  {
+    title: 'Auditing & Security',
+    items: [
+      { label: 'Login Audits', href: ROUTES.DASHBOARD.LOGIN_LOGS, icon: ShieldAlert },
+      { label: 'Audit Trail', href: ROUTES.DASHBOARD.AUDIT, icon: History },
+    ]
+  }
 ];
 
 /**
@@ -49,7 +69,7 @@ export function Sidebar({ isOpen, setIsOpen }) {
       {/* Brand logotype segment */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/80 shrink-0">
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 text-white font-bold text-base shadow-sm shadow-indigo-550">
+          <div className="w-8 h-8 rounded-lg bg-indigo-650 flex items-center justify-center shrink-0 text-white font-bold text-base shadow-sm shadow-indigo-550">
             A
           </div>
           {isOpen && (
@@ -71,32 +91,43 @@ export function Sidebar({ isOpen, setIsOpen }) {
       </div>
 
       {/* Navigation menu list */}
-      <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
-        {navigationItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
+      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+        {navigationGroups.map((group, groupIdx) => (
+          <div key={`group-${groupIdx}`} className="space-y-1.5">
+            {isOpen && (
+              <h4 className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                {group.title}
+              </h4>
+            )}
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
 
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all duration-150 relative group ${
-                isActive
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'hover:bg-slate-800/60 hover:text-white'
-              }`}
-            >
-              <Icon className="w-4.5 h-4.5 shrink-0" />
-              {isOpen ? (
-                <span className="truncate">{item.label}</span>
-              ) : (
-                <span className="absolute left-16 bg-slate-950 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 shadow-xl whitespace-nowrap z-50">
-                  {item.label}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all duration-150 relative group ${
+                      isActive
+                        ? 'bg-indigo-650 text-white shadow-md shadow-indigo-650/20'
+                        : 'hover:bg-slate-800/65 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-4.5 h-4.5 shrink-0" />
+                    {isOpen ? (
+                      <span className="truncate">{item.label}</span>
+                    ) : (
+                      <span className="absolute left-16 bg-slate-950 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 shadow-xl whitespace-nowrap z-50">
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Sidebar Footer info */}

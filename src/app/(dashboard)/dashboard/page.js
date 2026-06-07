@@ -3,21 +3,23 @@
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { 
-  Server, 
-  CloudLightning, 
-  Layers, 
-  Terminal, 
+  Users, 
+  Building, 
+  History, 
+  ShieldAlert, 
+  Database,
+  CloudLightning,
+  Layers,
+  Terminal,
   CheckCircle2, 
   AlertTriangle, 
   Eye, 
-  Trash2, 
   UploadCloud, 
-  Search,
-  Database,
   RefreshCw,
   FolderOpen
 } from 'lucide-react';
 
+import Link from 'next/link';
 import PageHeader from '@/components/shared/PageHeader.jsx';
 import CardWrapper from '@/components/shared/CardWrapper.jsx';
 import DataTable from '@/components/shared/DataTable.jsx';
@@ -47,6 +49,10 @@ export default function DashboardHome() {
   // Page UI State
   const [activeTab, setActiveTab] = useState('components');
   
+  // Real stats state
+  const [stats, setStats] = useState({ users: 0, branches: 0, auditLogs: 0, loginLogs: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+
   // Data Table and Search states
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,8 +77,24 @@ export default function DashboardHome() {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
-  // Connection State Mocking
-  const [dbStatus, setDbStatus] = useState('CONNECTED');
+  // Fetch Database Counts
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/dashboard/stats');
+      if (res.ok) {
+        const json = await res.json();
+        setStats(json.data);
+      }
+    } catch (e) {
+      console.error('Failed to load stats:', e);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   // Filter and paginate mock data
   const filteredLogs = mockLogs.filter(log => 
@@ -142,7 +164,6 @@ export default function DashboardHome() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check size limit: 5MB
     if (file.size > 5 * 1024 * 1024) {
       setUploadError('File exceeds 5MB size limit.');
       return;
@@ -151,7 +172,6 @@ export default function DashboardHome() {
     setUploadLoading(true);
     setUploadError(null);
 
-    // Simulate Cloudinary API round-trip
     setTimeout(() => {
       setUploadedFile({
         name: file.name,
@@ -177,7 +197,7 @@ export default function DashboardHome() {
       header: 'Triggered By',
       accessor: 'operator',
       cell: ({ value }) => (
-        <span className="font-mono text-xs font-semibold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-md text-slate-700 dark:text-slate-300">
+        <span className="font-mono text-xs font-semibold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-md text-slate-700 dark:text-slate-350">
           {value}
         </span>
       ),
@@ -197,7 +217,7 @@ export default function DashboardHome() {
               setSelectedRow(row);
               setDrawerOpen(true);
             }}
-            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 hover:text-indigo-650 transition-colors cursor-pointer"
             title="View Details"
           >
             <Eye className="w-4 h-4" />
@@ -211,88 +231,98 @@ export default function DashboardHome() {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader 
-        title="Foundation Showcase" 
-        subtitle="Verification suite for Phase 0 core banking features, shared components, and configuration validation."
+        title="Admin Control Center" 
+        subtitle="Manage employees, branches, access policies, and audit ledgers."
         breadcrumbs={[
           { label: 'Platform Core', href: '#' },
-          { label: 'Showcase', href: '/dashboard' }
+          { label: 'Overview', href: '/dashboard' }
         ]}
         action={
           <button 
             onClick={() => {
-              setTableLoading(true);
-              setTimeout(() => setTableLoading(false), 800);
+              setStatsLoading(true);
+              fetchStats();
             }}
             className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all cursor-pointer shadow-sm text-slate-700 dark:text-slate-350"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Reload Data
+            Refresh Overview
           </button>
         }
       />
 
       {/* Integration Status Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <CardWrapper className="relative overflow-hidden group">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-              <Database className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Database</p>
-              <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">MongoDB Atlas</h4>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-emerald-600 uppercase">Singleton Active</span>
+        <Link href="/dashboard/users" className="transition-transform hover:scale-[1.01] duration-200 cursor-pointer block">
+          <CardWrapper className="h-full">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Registered Users</p>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+                  {statsLoading ? '...' : stats.users} Employees
+                </h4>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase">DB Connected</span>
+                </div>
               </div>
             </div>
-          </div>
-        </CardWrapper>
+          </CardWrapper>
+        </Link>
 
-        <CardWrapper>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-              <CloudLightning className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Storage Link</p>
-              <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">Cloudinary API</h4>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                <span className="text-[10px] font-bold text-indigo-600 uppercase">Mock Fallback ON</span>
+        <Link href="/dashboard/branches" className="transition-transform hover:scale-[1.01] duration-200 cursor-pointer block">
+          <CardWrapper className="h-full">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Building className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Branches</p>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+                  {statsLoading ? '...' : stats.branches} Offices
+                </h4>
+                <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 block">Head Office Bound</span>
               </div>
             </div>
-          </div>
-        </CardWrapper>
+          </CardWrapper>
+        </Link>
 
-        <CardWrapper>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <Layers className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Components</p>
-              <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">12 Shared Primitives</h4>
-              <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 block">React / Tailwind CSS</span>
-            </div>
-          </div>
-        </CardWrapper>
-
-        <CardWrapper>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-              <Terminal className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Build System</p>
-              <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">Turbopack Prod</h4>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[10px] font-bold text-emerald-600 uppercase">Lints Passed</span>
+        <Link href="/dashboard/audit" className="transition-transform hover:scale-[1.01] duration-200 cursor-pointer block">
+          <CardWrapper className="h-full">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <History className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Audit History</p>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+                  {statsLoading ? '...' : stats.auditLogs} Records
+                </h4>
+                <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 block">Delta mutation logging</span>
               </div>
             </div>
-          </div>
-        </CardWrapper>
+          </CardWrapper>
+        </Link>
+
+        <Link href="/dashboard/login-logs" className="transition-transform hover:scale-[1.01] duration-200 cursor-pointer block">
+          <CardWrapper className="h-full">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Access History</p>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+                  {statsLoading ? '...' : stats.loginLogs} Attempts
+                </h4>
+                <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 block">Security login log files</span>
+              </div>
+            </div>
+          </CardWrapper>
+        </Link>
       </div>
 
       {/* Main Tabbed Showcase Layout */}
@@ -488,7 +518,7 @@ export default function DashboardHome() {
               <CardWrapper className="bg-slate-50/20 dark:bg-slate-900/10 border-slate-150">
                 <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-950 text-center">
                   <UploadCloud className="w-10 h-10 text-slate-400 mb-3" />
-                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Drag or click to choose a KYC document</p>
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-350">Drag or click to choose a KYC document</p>
                   <p className="text-xs text-slate-400 mt-1">Accepts images, PDF, Word documents up to 5MB.</p>
                   
                   <input
@@ -507,7 +537,7 @@ export default function DashboardHome() {
                 </div>
 
                 {uploadLoading && (
-                  <div className="flex items-center justify-center gap-3 mt-5 p-4 rounded-xl border border-indigo-100/50 bg-indigo-50/10 dark:bg-indigo-950/5 text-indigo-600 dark:text-indigo-400">
+                  <div className="flex items-center justify-center gap-3 mt-5 p-4 rounded-xl border border-indigo-100/50 bg-indigo-50/10 dark:bg-indigo-950/5 text-indigo-600 dark:text-indigo-450">
                     <LoadingSpinner size="sm" />
                     <span className="text-xs font-semibold">Uploading via UploadService ...</span>
                   </div>
@@ -554,7 +584,7 @@ export default function DashboardHome() {
                           href={uploadedFile.secure_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="block text-indigo-600 dark:text-indigo-400 font-semibold hover:underline truncate"
+                          className="block text-indigo-650 dark:text-indigo-400 font-semibold hover:underline truncate"
                         >
                           View Uploaded Asset
                         </a>
@@ -575,7 +605,7 @@ export default function DashboardHome() {
         title="Cooperative Administration Core Settings"
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+          <p className="text-sm text-slate-650 dark:text-slate-400 leading-relaxed">
             This modal demonstrates support for <strong>Escape key listeners</strong>, <strong>scroll locks</strong>, and <strong>glassmorphism backdrop blurs</strong>.
           </p>
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 text-xs font-mono text-slate-500 space-y-1">
@@ -626,7 +656,7 @@ export default function DashboardHome() {
 
             <div className="space-y-1">
               <span className="text-xs text-slate-400 font-semibold block">Timestamp (ISO)</span>
-              <p className="text-xs text-slate-600 dark:text-slate-350 font-semibold">{selectedRow.timestamp}</p>
+              <p className="text-xs text-slate-650 dark:text-slate-350 font-semibold">{selectedRow.timestamp}</p>
             </div>
 
             <div className="space-y-1">

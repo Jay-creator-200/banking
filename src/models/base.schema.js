@@ -64,7 +64,9 @@ export function baseSchemaPlugin(schema) {
       if (queryFilter.isDeleted === undefined) {
         this.where({ isDeleted: false });
       }
-      next();
+      if (typeof next === 'function') {
+        next();
+      }
     });
   });
 

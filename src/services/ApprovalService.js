@@ -79,6 +79,9 @@ export class ApprovalService extends BaseService {
       } else if (approval.moduleName === 'REVERSAL') {
         const { ReversalServiceInstance } = await import('./ReversalService.js');
         await ReversalServiceInstance.approveReversal(approval.referenceId, userId, session);
+      } else if (approval.moduleName === 'LOAN_WRITEOFF') {
+        const { LoanWriteoffServiceInstance } = await import('./LoanWriteoffService.js');
+        await LoanWriteoffServiceInstance.executeWriteoff(approval.referenceId, userId, session);
       }
 
       await session.commitTransaction();
@@ -131,6 +134,12 @@ export class ApprovalService extends BaseService {
       } else if (approval.moduleName === 'REVERSAL') {
         const { ReversalServiceInstance } = await import('./ReversalService.js');
         await ReversalServiceInstance.rejectReversal(approval.referenceId, userId, validated.remarks, session);
+      } else if (approval.moduleName === 'LOAN_WRITEOFF') {
+        // Mark write-off as rejected
+        const LoanWriteoff = mongoose.model('LoanWriteoff');
+        await LoanWriteoff.findByIdAndUpdate(approval.referenceId, {
+          $set: { writeoffStatus: 'rejected', updatedBy: userId },
+        }).session(session);
       }
 
       await session.commitTransaction();

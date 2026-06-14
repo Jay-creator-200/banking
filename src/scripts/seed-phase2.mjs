@@ -56,6 +56,8 @@ const coaNodes = [
   { name: 'Savings Deposit Liability', code: '21001', type: 'LIABILITY', parentCode: '21000' },
   { name: 'Recurring Deposit Liability', code: '21002', type: 'LIABILITY', parentCode: '21000' },
   { name: 'Fixed Deposit Liability', code: '21003', type: 'LIABILITY', parentCode: '21000' },
+  { name: 'Daily Deposit Liability', code: '21004', type: 'LIABILITY', parentCode: '21000' },
+  { name: 'Monthly Income Scheme Liability', code: '21005', type: 'LIABILITY', parentCode: '21000' },
 
   // 4. Equity Subgroups
   { name: 'Share Capital Outstanding', code: '31001', type: 'EQUITY', parentCode: '30000' },

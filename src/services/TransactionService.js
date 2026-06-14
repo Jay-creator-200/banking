@@ -32,13 +32,22 @@ export class TransactionService extends BaseService {
       const transactionNo = await sequenceService.generateTransactionNo(validatedData.branchId, session);
 
       // Check for savings withdrawal hold
-      if (validatedData.transactionType === 'SAVINGS_WITHDRAWAL') {
-        const SavingsAccount = mongoose.model('SavingsAccount');
-        const account = await SavingsAccount.findOne({ accountNo: validatedData.accountId }).session(session);
-        if (!account) {
-          throw AppError.notFound('Savings account not found');
+      const isSavingsWithdrawal = validatedData.transactionType === 'SAVINGS_WITHDRAWAL';
+      const isTransferDeposit = [
+        'RD_DEPOSIT_TRANSFER', 'FD_DEPOSIT_TRANSFER', 'DDS_DEPOSIT_TRANSFER', 'MIS_DEPOSIT_TRANSFER'
+      ].includes(validatedData.transactionType);
+
+      if (isSavingsWithdrawal || isTransferDeposit) {
+        const savingsAccountNo = isSavingsWithdrawal ? validatedData.accountId : validatedData.referenceNo;
+        if (!savingsAccountNo) {
+          throw AppError.validation('Source savings account number is required for transfer.');
         }
-        if (account.status !== 'active') {
+        const SavingsAccount = mongoose.model('SavingsAccount');
+        const account = await SavingsAccount.findOne({ accountNo: savingsAccountNo }).session(session);
+        if (!account) {
+          throw AppError.notFound(`Source savings account ${savingsAccountNo} not found`);
+        }
+        if (account.status.toUpperCase() !== 'ACTIVE') {
           throw AppError.validation(`Savings account is not active (current status: ${account.status})`);
         }
         if (account.availableBalance - validatedData.amount < account.minimumBalance) {
@@ -154,6 +163,102 @@ export class TransactionService extends BaseService {
         transaction.balanceAfter = account.currentBalance;
         await transaction.save({ session });
       }
+      // --- DEPOSITS MODULE POST-APPROVAL HOOKS ---
+      // 1. RD Deposits
+      else if (transaction.transactionType === 'RD_DEPOSIT' || transaction.transactionType === 'RD_DEPOSIT_TRANSFER') {
+        const rdService = (await import('./RDService.js')).default;
+        await rdService.handlePostApprovalDeposit(transaction, userId, session);
+
+        if (transaction.transactionType === 'RD_DEPOSIT_TRANSFER' && transaction.referenceNo) {
+          const SavingsAccount = mongoose.model('SavingsAccount');
+          const fundingAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+          if (fundingAcc) {
+            fundingAcc.currentBalance -= transaction.amount;
+            await fundingAcc.save({ session });
+          }
+        }
+      }
+
+      // 2. FD Deposits
+      else if (transaction.transactionType === 'FD_DEPOSIT' || transaction.transactionType === 'FD_DEPOSIT_TRANSFER') {
+        const fdService = (await import('./FDService.js')).default;
+        await fdService.handlePostApprovalDeposit(transaction, userId, session);
+
+        if (transaction.transactionType === 'FD_DEPOSIT_TRANSFER' && transaction.referenceNo) {
+          const SavingsAccount = mongoose.model('SavingsAccount');
+          const fundingAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+          if (fundingAcc) {
+            fundingAcc.currentBalance -= transaction.amount;
+            await fundingAcc.save({ session });
+          }
+        }
+      }
+
+      // 3. DDS Deposits
+      else if (transaction.transactionType === 'DDS_DEPOSIT' || transaction.transactionType === 'DDS_DEPOSIT_TRANSFER') {
+        const ddsService = (await import('./DDSService.js')).default;
+        await ddsService.handlePostApprovalDeposit(transaction, userId, session);
+
+        if (transaction.transactionType === 'DDS_DEPOSIT_TRANSFER' && transaction.referenceNo) {
+          const SavingsAccount = mongoose.model('SavingsAccount');
+          const fundingAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+          if (fundingAcc) {
+            fundingAcc.currentBalance -= transaction.amount;
+            await fundingAcc.save({ session });
+          }
+        }
+      }
+
+      // 4. MIS Deposits
+      else if (transaction.transactionType === 'MIS_DEPOSIT' || transaction.transactionType === 'MIS_DEPOSIT_TRANSFER') {
+        const misService = (await import('./MISService.js')).default;
+        await misService.handlePostApprovalDeposit(transaction, userId, session);
+
+        if (transaction.transactionType === 'MIS_DEPOSIT_TRANSFER' && transaction.referenceNo) {
+          const SavingsAccount = mongoose.model('SavingsAccount');
+          const fundingAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+          if (fundingAcc) {
+            fundingAcc.currentBalance -= transaction.amount;
+            await fundingAcc.save({ session });
+          }
+        }
+      }
+
+      // 5. MIS Monthly Payouts
+      else if (transaction.transactionType === 'MIS_PAYOUT_TRANSFER') {
+        const SavingsAccount = mongoose.model('SavingsAccount');
+        const destAcc = await SavingsAccount.findOne({ accountNo: transaction.accountId }).session(session);
+        if (destAcc) {
+          destAcc.currentBalance += transaction.amount;
+          destAcc.availableBalance += transaction.amount;
+          await destAcc.save({ session });
+        }
+        const misService = (await import('./MISService.js')).default;
+        await misService.handlePostApprovalPayout(transaction, userId, session);
+      }
+      else if (transaction.transactionType === 'MIS_PAYOUT') {
+        const misService = (await import('./MISService.js')).default;
+        await misService.handlePostApprovalPayout(transaction, userId, session);
+      }
+
+      // 6. Closures and Maturity liquidations (Withdrawals)
+      else if ([
+        'RD_WITHDRAWAL', 'FD_WITHDRAWAL', 'DDS_WITHDRAWAL', 'MIS_WITHDRAWAL',
+        'RD_WITHDRAWAL_TRANSFER', 'FD_WITHDRAWAL_TRANSFER', 'DDS_WITHDRAWAL_TRANSFER', 'MIS_WITHDRAWAL_TRANSFER'
+      ].includes(transaction.transactionType)) {
+        const depositMaturityService = (await import('./DepositMaturityService.js')).default;
+        await depositMaturityService.handlePostApprovalWithdrawal(transaction, userId, session);
+
+        if (transaction.transactionType.endsWith('_TRANSFER') && transaction.referenceNo) {
+          const SavingsAccount = mongoose.model('SavingsAccount');
+          const destAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+          if (destAcc) {
+            destAcc.currentBalance += transaction.amount;
+            destAcc.availableBalance += transaction.amount;
+            await destAcc.save({ session });
+          }
+        }
+      }
 
       // Execute post-approval hook for share capital purchase
       if (transaction.transactionType === 'SHARE_PURCHASE' && transaction.sourceCollection === 'ShareCertificate') {
@@ -245,14 +350,22 @@ export class TransactionService extends BaseService {
       }
       await transaction.save({ session });
 
-      // Release hold on available balance if it was a savings withdrawal
-      if (transaction.transactionType === 'SAVINGS_WITHDRAWAL') {
-        const SavingsAccount = mongoose.model('SavingsAccount');
-        const account = await SavingsAccount.findOne({ accountNo: transaction.accountId }).session(session);
-        if (account) {
-          account.availableBalance += transaction.amount;
-          account.updatedBy = userId;
-          await account.save({ session });
+      // Release hold on available balance if it was a savings withdrawal or transfer-based deposit funding
+      const isSavingsWithdrawal = transaction.transactionType === 'SAVINGS_WITHDRAWAL';
+      const isTransferDeposit = [
+        'RD_DEPOSIT_TRANSFER', 'FD_DEPOSIT_TRANSFER', 'DDS_DEPOSIT_TRANSFER', 'MIS_DEPOSIT_TRANSFER'
+      ].includes(transaction.transactionType);
+
+      if (isSavingsWithdrawal || isTransferDeposit) {
+        const savingsAccountNo = isSavingsWithdrawal ? transaction.accountId : transaction.referenceNo;
+        if (savingsAccountNo) {
+          const SavingsAccount = mongoose.model('SavingsAccount');
+          const account = await SavingsAccount.findOne({ accountNo: savingsAccountNo }).session(session);
+          if (account) {
+            account.availableBalance += transaction.amount;
+            account.updatedBy = userId;
+            await account.save({ session });
+          }
         }
       }
 

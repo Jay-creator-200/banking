@@ -50,6 +50,13 @@ import LoanPayment from '../models/LoanPayment.js';
 import JournalVoucher from '../models/JournalVoucher.js';
 import LedgerEntry from '../models/LedgerEntry.js';
 import AccountHead from '../models/AccountHead.js';
+import DepositScheme from '../models/DepositScheme.js';
+import RDAccount from '../models/RDAccount.js';
+import RDInstallment from '../models/RDInstallment.js';
+import FDAccount from '../models/FDAccount.js';
+import DDSAccount from '../models/DDSAccount.js';
+import DDSCollection from '../models/DDSCollection.js';
+import MISAccount from '../models/MISAccount.js';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -85,6 +92,15 @@ async function seedDemoData() {
       await Loan.deleteMany({ branchId });
       await LoanSchedule.deleteMany({ loanId: { $in: loanIds } });
       await LoanPayment.deleteMany({ loanId: { $in: loanIds } });
+      await DepositScheme.deleteMany({});
+      const rdAccIds = await RDAccount.find({ branchId }).distinct('_id');
+      await RDAccount.deleteMany({ branchId });
+      await RDInstallment.deleteMany({ rdAccountId: { $in: rdAccIds } });
+      await FDAccount.deleteMany({ branchId });
+      const ddsAccIds = await DDSAccount.find({ branchId }).distinct('_id');
+      await DDSAccount.deleteMany({ branchId });
+      await DDSCollection.deleteMany({ ddsAccountId: { $in: ddsAccIds } });
+      await MISAccount.deleteMany({ branchId });
       await JournalVoucher.deleteMany({ branchId });
       await LedgerEntry.deleteMany({ branchId });
       await Branch.deleteOne({ _id: branchId });
@@ -991,6 +1007,520 @@ async function seedDemoData() {
       approvedAt: new Date('2026-05-20')
     });
     console.log(`Seeded Rejected Loan Application for ${memberPriya.fullName}.`);
+
+    // ==========================================
+    // 9. SEED DEPOSIT SCHEMES & ACCOUNTS
+    // ==========================================
+    console.log('Seeding deposit schemes...');
+    
+    const schemesData = [
+      {
+        schemeCode: 'RD01',
+        schemeName: 'Recurring Deposit Scheme',
+        schemeType: 'RD',
+        description: 'Standard Recurring Deposit with monthly installments',
+        interestType: 'compound',
+        interestRate: 8.0,
+        compoundingFrequency: 'quarterly',
+        minimumTenure: 6,
+        maximumTenure: 60,
+        tenureUnit: 'months',
+        minimumDepositAmount: 500,
+        maximumDepositAmount: 50000,
+        installmentFrequency: 'monthly',
+        allowedPrematureClosure: true,
+        prematurePenaltyRate: 1.0,
+      },
+      {
+        schemeCode: 'FD01',
+        schemeName: 'Fixed Deposit Scheme',
+        schemeType: 'FD',
+        description: 'Standard Fixed Deposit with high returns',
+        interestType: 'compound',
+        interestRate: 9.0,
+        compoundingFrequency: 'quarterly',
+        minimumTenure: 3,
+        maximumTenure: 120,
+        tenureUnit: 'months',
+        minimumDepositAmount: 1000,
+        maximumDepositAmount: 10000000,
+        allowedPrematureClosure: true,
+        prematurePenaltyRate: 1.0,
+      },
+      {
+        schemeCode: 'DDS01',
+        schemeName: 'Daily Deposit Scheme',
+        schemeType: 'DDS',
+        description: 'Daily collection scheme for small businesses',
+        interestType: 'simple',
+        interestRate: 6.0,
+        minimumTenure: 30,
+        maximumTenure: 365,
+        tenureUnit: 'days',
+        minimumDepositAmount: 50,
+        maximumDepositAmount: 5000,
+        installmentFrequency: 'daily',
+        allowedPrematureClosure: true,
+        prematurePenaltyRate: 1.0,
+      },
+      {
+        schemeCode: 'MIS01',
+        schemeName: 'Monthly Income Scheme',
+        schemeType: 'MIS',
+        description: 'Monthly interest payout scheme',
+        interestType: 'simple',
+        interestRate: 8.5,
+        minimumTenure: 12,
+        maximumTenure: 120,
+        tenureUnit: 'months',
+        minimumDepositAmount: 10000,
+        maximumDepositAmount: 1500000,
+        allowedPrematureClosure: true,
+        prematurePenaltyRate: 1.0,
+      }
+    ];
+
+    const seededSchemes = {};
+    for (const s of schemesData) {
+      const schemeDoc = await DepositScheme.findOneAndUpdate(
+        { schemeCode: s.schemeCode },
+        { ...s, isDeleted: false },
+        { upsert: true, new: true }
+      );
+      seededSchemes[s.schemeCode] = schemeDoc;
+      console.log(`Seeded scheme: ${schemeDoc.schemeName}`);
+    }
+
+    // Load account head models for deposits
+    const rdHead = headsMap['21002'];
+    const fdHead = headsMap['21003'];
+    const ddsHead = headsMap['21004'];
+    const misHead = headsMap['21005'];
+    const interestExpenseHead = headsMap['51001'];
+
+    if (!rdHead || !fdHead || !ddsHead || !misHead || !interestExpenseHead) {
+      console.error('Chart of accounts heads for deposits are missing. Run seed-phase2.mjs first.');
+      process.exit(1);
+    }
+
+    // 9.1 RD Account - Rajesh Sharma
+    console.log('Seeding RD Account...');
+    const rdScheme = seededSchemes['RD01'];
+    const startDateRD = new Date('2026-01-01');
+    const maturityDateRD = new Date(startDateRD);
+    maturityDateRD.setMonth(maturityDateRD.getMonth() + 12);
+    const nextInstRD = new Date(startDateRD);
+    nextInstRD.setMonth(nextInstRD.getMonth() + 6); // next is 6th installment (June)
+
+    const rdAccount = await RDAccount.create({
+      rdAccountNo: 'RD-JPR-2026-000001',
+      memberId: memberRajesh._id,
+      schemeId: rdScheme._id,
+      branchId: branch._id,
+      monthlyInstallment: 1000,
+      tenureMonths: 12,
+      interestRate: 8.0,
+      startDate: startDateRD,
+      maturityDate: maturityDateRD,
+      totalDepositAmount: 5000, // 5 paid
+      totalInterest: 524.40,
+      maturityAmount: 12524.40,
+      status: 'active',
+      nextInstallmentDate: nextInstRD,
+      createdBy: seededStaff[1]._id,
+    });
+
+    // Create schedule
+    const rdInstallments = [];
+    for (let i = 1; i <= 12; i++) {
+      const dueDate = new Date(startDateRD);
+      dueDate.setMonth(dueDate.getMonth() + i);
+      const isPaid = i <= 5;
+      
+      const inst = await RDInstallment.create({
+        rdAccountId: rdAccount._id,
+        installmentNo: i,
+        dueDate,
+        amount: 1000,
+        paidAmount: isPaid ? 1000 : 0,
+        paidDate: isPaid ? new Date(dueDate.getTime() - 2 * 24 * 60 * 60 * 1000) : null,
+        status: isPaid ? 'paid' : 'pending',
+      });
+      rdInstallments.push(inst);
+
+      if (isPaid) {
+        // Post transaction & ledger lines
+        txCount++;
+        const txn = await Transaction.create({
+          transactionNo: `TXN-JPR-2026-${String(txCount).padStart(6, '0')}`,
+          branchId: branch._id,
+          memberId: memberRajesh._id,
+          accountType: 'scheme',
+          accountId: rdAccount.rdAccountNo,
+          transactionType: 'RD_DEPOSIT',
+          paymentMode: 'CASH',
+          amount: 1000,
+          balanceAfter: i * 1000,
+          narration: `RD installment #${i} payment for ${rdAccount.rdAccountNo}`,
+          status: 'POSTED',
+          approvedBy: seededStaff[1]._id,
+          approvedAt: inst.paidDate,
+          createdAt: inst.paidDate,
+        });
+
+        jvCount++;
+        const jv = await JournalVoucher.create({
+          voucherNo: `JV-JPR-2026-${String(jvCount).padStart(6, '0')}`,
+          voucherDate: inst.paidDate,
+          voucherType: 'RECEIPT',
+          branchId: branch._id,
+          narration: txn.narration,
+          approvedBy: seededStaff[1]._id,
+        });
+
+        await LedgerEntry.create([
+          {
+            voucherId: jv._id,
+            transactionId: txn._id,
+            accountHeadId: cashHead._id,
+            entryDate: inst.paidDate,
+            debit: 1000,
+            credit: 0,
+            branchId: branch._id,
+            memberId: memberRajesh._id,
+            narration: txn.narration,
+          },
+          {
+            voucherId: jv._id,
+            transactionId: txn._id,
+            accountHeadId: rdHead._id,
+            entryDate: inst.paidDate,
+            debit: 0,
+            credit: 1000,
+            branchId: branch._id,
+            memberId: memberRajesh._id,
+            narration: txn.narration,
+          }
+        ]);
+      }
+    }
+    console.log(`Seeded RD Account: ${rdAccount.rdAccountNo}`);
+
+    // 9.2 FD Account - Suresh Patel
+    console.log('Seeding FD Account...');
+    const fdScheme = seededSchemes['FD01'];
+    const startDateFD = new Date('2026-01-01');
+    const maturityDateFD = new Date(startDateFD);
+    maturityDateFD.setMonth(maturityDateFD.getMonth() + 12);
+
+    const fdAccount = await FDAccount.create({
+      fdAccountNo: 'FD-JPR-2026-000001',
+      memberId: memberSuresh._id,
+      schemeId: fdScheme._id,
+      branchId: branch._id,
+      principalAmount: 100000,
+      interestRate: 9.0,
+      tenureMonths: 12,
+      startDate: startDateFD,
+      maturityDate: maturityDateFD,
+      interestAmount: 9308.33,
+      maturityAmount: 109308.33,
+      paymentMode: 'maturity',
+      status: 'active',
+      createdBy: seededStaff[1]._id,
+    });
+
+    txCount++;
+    const txnFD = await Transaction.create({
+      transactionNo: `TXN-JPR-2026-${String(txCount).padStart(6, '0')}`,
+      branchId: branch._id,
+      memberId: memberSuresh._id,
+      accountType: 'scheme',
+      accountId: fdAccount.fdAccountNo,
+      transactionType: 'FD_DEPOSIT',
+      paymentMode: 'CASH',
+      amount: 100000,
+      balanceAfter: 100000,
+      narration: `FD principal deposit for ${fdAccount.fdAccountNo}`,
+      status: 'POSTED',
+      approvedBy: seededStaff[1]._id,
+      approvedAt: startDateFD,
+      createdAt: startDateFD,
+    });
+
+    jvCount++;
+    const jvFD = await JournalVoucher.create({
+      voucherNo: `JV-JPR-2026-${String(jvCount).padStart(6, '0')}`,
+      voucherDate: startDateFD,
+      voucherType: 'RECEIPT',
+      branchId: branch._id,
+      narration: txnFD.narration,
+      approvedBy: seededStaff[1]._id,
+    });
+
+    await LedgerEntry.create([
+      {
+        voucherId: jvFD._id,
+        transactionId: txnFD._id,
+        accountHeadId: cashHead._id,
+        entryDate: startDateFD,
+        debit: 100000,
+        credit: 0,
+        branchId: branch._id,
+        memberId: memberSuresh._id,
+        narration: txnFD.narration,
+      },
+      {
+        voucherId: jvFD._id,
+        transactionId: txnFD._id,
+        accountHeadId: fdHead._id,
+        entryDate: startDateFD,
+        debit: 0,
+        credit: 100000,
+        branchId: branch._id,
+        memberId: memberSuresh._id,
+        narration: txnFD.narration,
+      }
+    ]);
+    console.log(`Seeded FD Account: ${fdAccount.fdAccountNo}`);
+
+    // 9.3 DDS Account - Amit Verma
+    console.log('Seeding DDS Account...');
+    const ddsScheme = seededSchemes['DDS01'];
+    const startDateDDS = new Date('2026-01-01');
+    const maturityDateDDS = new Date(startDateDDS);
+    maturityDateDDS.setDate(maturityDateDDS.getDate() + 180);
+
+    const ddsAccount = await DDSAccount.create({
+      ddsAccountNo: 'DDS-JPR-2026-000001',
+      memberId: memberAmit._id,
+      schemeId: ddsScheme._id,
+      branchId: branch._id,
+      dailyAmount: 100,
+      durationDays: 180,
+      startDate: startDateDDS,
+      maturityDate: maturityDateDDS,
+      totalDeposit: 15000, // 150 days paid
+      interestAmount: 221.91,
+      maturityAmount: 18221.91,
+      status: 'active',
+      createdBy: seededStaff[1]._id,
+    });
+
+    // Let's create a few daily collections logs to show history
+    for (let i = 1; i <= 5; i++) {
+      const colDate = new Date(startDateDDS);
+      colDate.setDate(colDate.getDate() + i);
+
+      await DDSCollection.create({
+        ddsAccountId: ddsAccount._id,
+        collectionDate: colDate,
+        amount: 100,
+        collectorId: seededStaff[2]._id,
+        status: 'posted',
+      });
+    }
+
+    // Summary DDS Posting
+    txCount++;
+    const txnDDS = await Transaction.create({
+      transactionNo: `TXN-JPR-2026-${String(txCount).padStart(6, '0')}`,
+      branchId: branch._id,
+      memberId: memberAmit._id,
+      accountType: 'scheme',
+      accountId: ddsAccount.ddsAccountNo,
+      transactionType: 'DDS_DEPOSIT',
+      paymentMode: 'CASH',
+      amount: 15000,
+      balanceAfter: 15000,
+      narration: `DDS summary collection for ${ddsAccount.ddsAccountNo}`,
+      status: 'POSTED',
+      approvedBy: seededStaff[1]._id,
+      approvedAt: new Date(),
+      createdAt: new Date(),
+    });
+
+    jvCount++;
+    const jvDDS = await JournalVoucher.create({
+      voucherNo: `JV-JPR-2026-${String(jvCount).padStart(6, '0')}`,
+      voucherDate: new Date(),
+      voucherType: 'RECEIPT',
+      branchId: branch._id,
+      narration: txnDDS.narration,
+      approvedBy: seededStaff[1]._id,
+    });
+
+    await LedgerEntry.create([
+      {
+        voucherId: jvDDS._id,
+        transactionId: txnDDS._id,
+        accountHeadId: cashHead._id,
+        entryDate: new Date(),
+        debit: 15000,
+        credit: 0,
+        branchId: branch._id,
+        memberId: memberAmit._id,
+        narration: txnDDS.narration,
+      },
+      {
+        voucherId: jvDDS._id,
+        transactionId: txnDDS._id,
+        accountHeadId: ddsHead._id,
+        entryDate: new Date(),
+        debit: 0,
+        credit: 15000,
+        branchId: branch._id,
+        memberId: memberAmit._id,
+        narration: txnDDS.narration,
+      }
+    ]);
+    console.log(`Seeded DDS Account: ${ddsAccount.ddsAccountNo}`);
+
+    // 9.4 MIS Account - Priya Gupta
+    console.log('Seeding MIS Account...');
+    const misScheme = seededSchemes['MIS01'];
+    const startDateMIS = new Date('2026-01-01');
+    const maturityDateMIS = new Date(startDateMIS);
+    maturityDateMIS.setMonth(maturityDateMIS.getMonth() + 12);
+    const nextPayoutMIS = new Date(startDateMIS);
+    nextPayoutMIS.setMonth(nextPayoutMIS.getMonth() + 6); // 5 payouts completed, next is 6th (June)
+
+    const misAccount = await MISAccount.create({
+      misAccountNo: 'MIS-JPR-2026-000001',
+      memberId: memberPriya._id,
+      schemeId: misScheme._id,
+      branchId: branch._id,
+      principalAmount: 200000,
+      interestRate: 8.5,
+      monthlyInterestAmount: 1416.67,
+      startDate: startDateMIS,
+      maturityDate: maturityDateMIS,
+      nextPayoutDate: nextPayoutMIS,
+      status: 'active',
+      createdBy: seededStaff[1]._id,
+    });
+
+    // Deposit transaction for MIS
+    txCount++;
+    const txnMIP = await Transaction.create({
+      transactionNo: `TXN-JPR-2026-${String(txCount).padStart(6, '0')}`,
+      branchId: branch._id,
+      memberId: memberPriya._id,
+      accountType: 'scheme',
+      accountId: misAccount.misAccountNo,
+      transactionType: 'MIS_DEPOSIT',
+      paymentMode: 'CASH',
+      amount: 200000,
+      balanceAfter: 200000,
+      narration: `MIS principal deposit for ${misAccount.misAccountNo}`,
+      status: 'POSTED',
+      approvedBy: seededStaff[1]._id,
+      approvedAt: startDateMIS,
+      createdAt: startDateMIS,
+    });
+
+    jvCount++;
+    const jvMIP = await JournalVoucher.create({
+      voucherNo: `JV-JPR-2026-${String(jvCount).padStart(6, '0')}`,
+      voucherDate: startDateMIS,
+      voucherType: 'RECEIPT',
+      branchId: branch._id,
+      narration: txnMIP.narration,
+      approvedBy: seededStaff[1]._id,
+    });
+
+    await LedgerEntry.create([
+      {
+        voucherId: jvMIP._id,
+        transactionId: txnMIP._id,
+        accountHeadId: cashHead._id,
+        entryDate: startDateMIS,
+        debit: 200000,
+        credit: 0,
+        branchId: branch._id,
+        memberId: memberPriya._id,
+        narration: txnMIP.narration,
+      },
+      {
+        voucherId: jvMIP._id,
+        transactionId: txnMIP._id,
+        accountHeadId: misHead._id,
+        entryDate: startDateMIS,
+        debit: 0,
+        credit: 200000,
+        branchId: branch._id,
+        memberId: memberPriya._id,
+        narration: txnMIP.narration,
+      }
+    ]);
+
+    // Credit interest payouts to Savings account
+    const savingsPriya = seededSavingsAccounts[3]; // Priya Gupta's savings account
+    for (let p = 1; p <= 5; p++) {
+      const payDate = new Date(startDateMIS);
+      payDate.setMonth(payDate.getMonth() + p);
+
+      // Increase Priya's savings balance
+      savingsPriya.currentBalance += 1416.67;
+      savingsPriya.availableBalance += 1416.67;
+      await savingsPriya.save();
+
+      // Payout Transaction
+      txCount++;
+      const txnPay = await Transaction.create({
+        transactionNo: `TXN-JPR-2026-${String(txCount).padStart(6, '0')}`,
+        branchId: branch._id,
+        memberId: memberPriya._id,
+        accountType: 'scheme',
+        accountId: savingsPriya.accountNo,
+        transactionType: 'MIS_PAYOUT_TRANSFER',
+        paymentMode: 'TRANSFER',
+        amount: 1416.67,
+        balanceAfter: savingsPriya.currentBalance,
+        referenceNo: misAccount.misAccountNo,
+        narration: `MIS monthly interest payout for ${misAccount.misAccountNo}`,
+        status: 'POSTED',
+        approvedBy: seededStaff[1]._id,
+        approvedAt: payDate,
+        createdAt: payDate,
+      });
+
+      jvCount++;
+      const jvPay = await JournalVoucher.create({
+        voucherNo: `JV-JPR-2026-${String(jvCount).padStart(6, '0')}`,
+        voucherDate: payDate,
+        voucherType: 'JOURNAL',
+        branchId: branch._id,
+        narration: txnPay.narration,
+        approvedBy: seededStaff[1]._id,
+      });
+
+      await LedgerEntry.create([
+        {
+          voucherId: jvPay._id,
+          transactionId: txnPay._id,
+          accountHeadId: interestExpenseHead._id,
+          entryDate: payDate,
+          debit: 1416.67,
+          credit: 0,
+          branchId: branch._id,
+          memberId: memberPriya._id,
+          narration: txnPay.narration,
+        },
+        {
+          voucherId: jvPay._id,
+          transactionId: txnPay._id,
+          accountHeadId: savingsHead._id,
+          entryDate: payDate,
+          debit: 0,
+          credit: 1416.67,
+          branchId: branch._id,
+          memberId: memberPriya._id,
+          narration: txnPay.narration,
+        }
+      ]);
+    }
+    console.log(`Seeded MIS Account: ${misAccount.misAccountNo} with 5 monthly interest payouts.`);
 
     console.log('=== DEMO DATA SEEDING COMPLETED SUCCESSFULLY ===');
     process.exit(0);

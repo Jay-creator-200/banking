@@ -23,7 +23,11 @@ import {
   Save,
   Check,
   X,
-  AlertTriangle
+  AlertTriangle,
+  PiggyBank,
+  CalendarClock,
+  TrendingUp,
+  Coins
 } from 'lucide-react';
 
 import CardWrapper from '@/components/shared/CardWrapper.jsx';
@@ -90,6 +94,10 @@ export default function MemberDetailPage() {
   const [loans, setLoans] = useState([]);
   const [loanApplications, setLoanApplications] = useState([]);
   const [loansLoading, setLoansLoading] = useState(false);
+
+  // Deposits tab state
+  const [deposits, setDeposits] = useState({ rd: [], fd: [], dds: [], mis: [] });
+  const [depositsLoading, setDepositsLoading] = useState(false);
 
   // Fetch all primary member details
   const fetchMemberDetails = useCallback(async () => {
@@ -235,6 +243,30 @@ export default function MemberDetailPage() {
     }
   }, [id]);
 
+  // Load deposit accounts for this member
+  const fetchDeposits = useCallback(async () => {
+    setDepositsLoading(true);
+    try {
+      const [rdRes, fdRes, ddsRes, misRes] = await Promise.all([
+        fetch(`/api/rd-accounts?memberId=${id}&limit=20`),
+        fetch(`/api/fd-accounts?memberId=${id}&limit=20`),
+        fetch(`/api/dds-accounts?memberId=${id}&limit=20`),
+        fetch(`/api/mis-accounts?memberId=${id}&limit=20`),
+      ]);
+      const [rdJson, fdJson, ddsJson, misJson] = await Promise.all([rdRes.json(), fdRes.json(), ddsRes.json(), misRes.json()]);
+      setDeposits({
+        rd: rdJson.data || [],
+        fd: fdJson.data || [],
+        dds: ddsJson.data || [],
+        mis: misJson.data || [],
+      });
+    } catch (e) {
+      console.error('Failed to load deposit accounts:', e);
+    } finally {
+      setDepositsLoading(false);
+    }
+  }, [id]);
+
   // Handle Tab Switch Actions
   useEffect(() => {
     if (activeTab === 'nominees') fetchNominees();
@@ -244,7 +276,8 @@ export default function MemberDetailPage() {
     if (activeTab === 'accounts') fetchSavingsAccounts();
     if (activeTab === 'loans') fetchLoansAndApplications();
     if (activeTab === 'audit') fetchAudits();
-  }, [activeTab, fetchNominees, fetchDocuments, fetchShares, fetchFees, fetchSavingsAccounts, fetchLoansAndApplications, fetchAudits]);
+    if (activeTab === 'deposits') fetchDeposits();
+  }, [activeTab, fetchNominees, fetchDocuments, fetchShares, fetchFees, fetchSavingsAccounts, fetchLoansAndApplications, fetchAudits, fetchDeposits]);
 
   // Update Member Demographics
   const handleUpdateDetails = async (e) => {
@@ -534,6 +567,7 @@ export default function MemberDetailPage() {
           { id: 'fees', label: 'Registration Fees', icon: DollarSign },
           { id: 'accounts', label: 'Savings & Current', icon: CheckCircle },
           { id: 'loans', label: 'Loans & Schemes', icon: AlertTriangle },
+          { id: 'deposits', label: 'Deposits', icon: PiggyBank },
           { id: 'audit', label: 'Audit History', icon: History }
         ].map((tab) => {
           const Icon = tab.icon;
@@ -1685,6 +1719,141 @@ export default function MemberDetailPage() {
               </div>
             </form>
           </CardWrapper>
+        </div>
+      )}
+
+      {/* Deposits Tab */}
+      {activeTab === 'deposits' && (
+        <div className="space-y-6">
+          {depositsLoading ? (
+            <div className="py-20 flex justify-center"><LoadingSpinner size="lg" /></div>
+          ) : (
+            <>
+              {/* RD Accounts */}
+              <CardWrapper className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <CalendarClock className="w-4 h-4 text-blue-500" /> Recurring Deposits ({deposits.rd.length})
+                  </h3>
+                  <button onClick={() => router.push('/dashboard/deposits/rd')} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl hover:bg-blue-100 transition-all">
+                    <Plus className="w-3.5 h-3.5" /> Enroll RD
+                  </button>
+                </div>
+                {deposits.rd.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-6">No RD accounts found for this member</p>
+                ) : (
+                  <div className="space-y-2">
+                    {deposits.rd.map(acct => (
+                      <div key={acct._id} className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                        <div>
+                          <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">{acct.rdAccountNo}</span>
+                          <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">{acct.status}</span>
+                          <p className="text-[10px] text-slate-500 mt-0.5">₹{acct.monthlyInstallment}/mo × {acct.tenureMonths} months • Rate: {acct.interestRate}%</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-extrabold text-indigo-600">₹{(acct.maturityAmount || 0).toLocaleString()}</p>
+                          <p className="text-[10px] text-slate-400">Maturity: {acct.maturityDate ? new Date(acct.maturityDate).toLocaleDateString('en-IN') : '—'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardWrapper>
+
+              {/* FD Accounts */}
+              <CardWrapper className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-emerald-500" /> Fixed Deposits ({deposits.fd.length})
+                  </h3>
+                  <button onClick={() => router.push('/dashboard/deposits/fd')} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl hover:bg-emerald-100 transition-all">
+                    <Plus className="w-3.5 h-3.5" /> Book FD
+                  </button>
+                </div>
+                {deposits.fd.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-6">No FD accounts found for this member</p>
+                ) : (
+                  <div className="space-y-2">
+                    {deposits.fd.map(acct => (
+                      <div key={acct._id} className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                        <div>
+                          <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">{acct.fdAccountNo}</span>
+                          <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">{acct.status}</span>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Principal: ₹{(acct.principalAmount || 0).toLocaleString()} • {acct.tenureMonths} months • Rate: {acct.interestRate}%</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-extrabold text-indigo-600">₹{(acct.maturityAmount || 0).toLocaleString()}</p>
+                          <p className="text-[10px] text-slate-400">Maturity: {acct.maturityDate ? new Date(acct.maturityDate).toLocaleDateString('en-IN') : '—'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardWrapper>
+
+              {/* DDS Accounts */}
+              <CardWrapper className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-violet-500" /> Daily Deposits ({deposits.dds.length})
+                  </h3>
+                  <button onClick={() => router.push('/dashboard/deposits/dds')} className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 text-xs font-bold rounded-xl hover:bg-violet-100 transition-all">
+                    <Plus className="w-3.5 h-3.5" /> Open DDS
+                  </button>
+                </div>
+                {deposits.dds.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-6">No DDS accounts found for this member</p>
+                ) : (
+                  <div className="space-y-2">
+                    {deposits.dds.map(acct => (
+                      <div key={acct._id} className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                        <div>
+                          <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">{acct.ddsAccountNo}</span>
+                          <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-violet-50 text-violet-700 border border-violet-200">{acct.status}</span>
+                          <p className="text-[10px] text-slate-500 mt-0.5">₹{acct.dailyAmount}/day × {acct.durationDays} days • Collected: ₹{(acct.totalDeposit || 0).toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-extrabold text-indigo-600">₹{(acct.maturityAmount || 0).toLocaleString()}</p>
+                          <p className="text-[10px] text-slate-400">Maturity: {acct.maturityDate ? new Date(acct.maturityDate).toLocaleDateString('en-IN') : '—'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardWrapper>
+
+              {/* MIS Accounts */}
+              <CardWrapper className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <PiggyBank className="w-4 h-4 text-amber-500" /> Monthly Income Scheme ({deposits.mis.length})
+                  </h3>
+                  <button onClick={() => router.push('/dashboard/deposits/mis')} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-xl hover:bg-amber-100 transition-all">
+                    <Plus className="w-3.5 h-3.5" /> Open MIS
+                  </button>
+                </div>
+                {deposits.mis.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-6">No MIS accounts found for this member</p>
+                ) : (
+                  <div className="space-y-2">
+                    {deposits.mis.map(acct => (
+                      <div key={acct._id} className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                        <div>
+                          <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">{acct.misAccountNo}</span>
+                          <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">{acct.status}</span>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Principal: ₹{(acct.principalAmount || 0).toLocaleString()} • Monthly Income: ₹{(acct.monthlyInterestAmount || 0).toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-extrabold text-amber-600">₹{(acct.monthlyInterestAmount || 0).toLocaleString()}/mo</p>
+                          <p className="text-[10px] text-slate-400">Next Payout: {acct.nextPayoutDate ? new Date(acct.nextPayoutDate).toLocaleDateString('en-IN') : '—'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardWrapper>
+            </>
+          )}
         </div>
       )}
 

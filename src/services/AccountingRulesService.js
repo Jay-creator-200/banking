@@ -38,6 +38,90 @@ export class AccountingRulesService {
         debitCode: '51001', // Interest Expenses
         creditCode: '21001', // Savings Deposit Liability
       },
+      RD_DEPOSIT: {
+        debitCode: '11001', // Cash In Hand
+        creditCode: '21002', // Recurring Deposit Liability
+      },
+      RD_DEPOSIT_TRANSFER: {
+        debitCode: '21001', // Savings Deposit Liability
+        creditCode: '21002', // Recurring Deposit Liability
+      },
+      RD_WITHDRAWAL: {
+        debitCode: '21002', // Recurring Deposit Liability
+        creditCode: '11001', // Cash In Hand
+      },
+      RD_WITHDRAWAL_TRANSFER: {
+        debitCode: '21002', // Recurring Deposit Liability
+        creditCode: '21001', // Savings Deposit Liability
+      },
+      RD_INTEREST: {
+        debitCode: '51001', // Interest Expenses
+        creditCode: '21002', // Recurring Deposit Liability
+      },
+      FD_DEPOSIT: {
+        debitCode: '11001', // Cash In Hand
+        creditCode: '21003', // Fixed Deposit Liability
+      },
+      FD_DEPOSIT_TRANSFER: {
+        debitCode: '21001', // Savings Deposit Liability
+        creditCode: '21003', // Fixed Deposit Liability
+      },
+      FD_WITHDRAWAL: {
+        debitCode: '21003', // Fixed Deposit Liability
+        creditCode: '11001', // Cash In Hand
+      },
+      FD_WITHDRAWAL_TRANSFER: {
+        debitCode: '21003', // Fixed Deposit Liability
+        creditCode: '21001', // Savings Deposit Liability
+      },
+      FD_INTEREST: {
+        debitCode: '51001', // Interest Expenses
+        creditCode: '21003', // Fixed Deposit Liability
+      },
+      DDS_DEPOSIT: {
+        debitCode: '11001', // Cash In Hand
+        creditCode: '21004', // Daily Deposit Scheme Liability
+      },
+      DDS_DEPOSIT_TRANSFER: {
+        debitCode: '21001', // Savings Deposit Liability
+        creditCode: '21004', // Daily Deposit Scheme Liability
+      },
+      DDS_WITHDRAWAL: {
+        debitCode: '21004', // Daily Deposit Scheme Liability
+        creditCode: '11001', // Cash In Hand
+      },
+      DDS_WITHDRAWAL_TRANSFER: {
+        debitCode: '21004', // Daily Deposit Scheme Liability
+        creditCode: '21001', // Savings Deposit Liability
+      },
+      DDS_INTEREST: {
+        debitCode: '51001', // Interest Expenses
+        creditCode: '21004', // Daily Deposit Scheme Liability
+      },
+      MIS_DEPOSIT: {
+        debitCode: '11001', // Cash In Hand
+        creditCode: '21005', // Monthly Income Scheme Liability
+      },
+      MIS_DEPOSIT_TRANSFER: {
+        debitCode: '21001', // Savings Deposit Liability
+        creditCode: '21005', // Monthly Income Scheme Liability
+      },
+      MIS_WITHDRAWAL: {
+        debitCode: '21005', // Monthly Income Scheme Liability
+        creditCode: '11001', // Cash In Hand
+      },
+      MIS_WITHDRAWAL_TRANSFER: {
+        debitCode: '21005', // Monthly Income Scheme Liability
+        creditCode: '21001', // Savings Deposit Liability
+      },
+      MIS_PAYOUT: {
+        debitCode: '51001', // Interest Expenses
+        creditCode: '11001', // Cash In Hand
+      },
+      MIS_PAYOUT_TRANSFER: {
+        debitCode: '51001', // Interest Expenses
+        creditCode: '21001', // Savings Deposit Liability
+      },
     };
     return rules[transactionType] || null;
   }

@@ -21,7 +21,13 @@ import {
   FolderTree,
   ArrowRightLeft,
   Vault,
-  FileSpreadsheet
+  FileSpreadsheet,
+  PiggyBank,
+  CalendarClock,
+  TrendingUp,
+  Coins,
+  BarChart3,
+  LibraryBig
 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes.js';
 import { APP_CONFIG } from '@/constants/app-config.js';
@@ -59,6 +65,17 @@ const navigationGroups = [
       { label: 'Employees', href: ROUTES.DASHBOARD.USERS, icon: Users },
       { label: 'Roles & Authority', href: ROUTES.DASHBOARD.ROLES, icon: Key },
       { label: 'Branch Registry', href: ROUTES.DASHBOARD.BRANCHES, icon: Building2 },
+    ]
+  },
+  {
+    title: 'Deposit Operations',
+    items: [
+      { label: 'Scheme Setup', href: ROUTES.DASHBOARD.DEPOSIT_SCHEMES, icon: LibraryBig },
+      { label: 'Recurring Deposits', href: ROUTES.DASHBOARD.DEPOSIT_RD, icon: CalendarClock },
+      { label: 'Fixed Deposits', href: ROUTES.DASHBOARD.DEPOSIT_FD, icon: TrendingUp },
+      { label: 'Daily Deposits', href: ROUTES.DASHBOARD.DEPOSIT_DDS, icon: Coins },
+      { label: 'Monthly Income', href: ROUTES.DASHBOARD.DEPOSIT_MIS, icon: PiggyBank },
+      { label: 'Deposit Reports', href: ROUTES.DASHBOARD.DEPOSIT_REPORTS, icon: BarChart3 },
     ]
   },
   {

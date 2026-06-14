@@ -28,6 +28,13 @@ export const ROUTES = {
     ACCOUNT_HEADS: '/dashboard/account-heads',
     JOURNAL_VOUCHERS: '/dashboard/journal-vouchers',
     LEDGER: '/dashboard/ledger',
+    // Deposit Operations
+    DEPOSIT_SCHEMES: '/dashboard/deposits/schemes',
+    DEPOSIT_RD: '/dashboard/deposits/rd',
+    DEPOSIT_FD: '/dashboard/deposits/fd',
+    DEPOSIT_DDS: '/dashboard/deposits/dds',
+    DEPOSIT_MIS: '/dashboard/deposits/mis',
+    DEPOSIT_REPORTS: '/dashboard/deposits/reports',
   },
 };
 

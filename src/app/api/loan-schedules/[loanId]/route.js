@@ -10,7 +10,8 @@ export async function GET(req, { params }) {
     await dbConnect();
     const session = await auth();
     if (!hasPermission(session, 'loan.view')) throw AppError.forbidden('Insufficient permissions');
-    const schedule = await loanScheduleService.getSchedule(params.loanId);
+    const { loanId } = await params;
+    const schedule = await loanScheduleService.getSchedule(loanId);
     return successResponse(schedule);
   } catch (error) {
     return errorResponse(error);

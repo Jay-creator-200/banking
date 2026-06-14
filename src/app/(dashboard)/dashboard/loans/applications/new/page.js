@@ -8,6 +8,7 @@ import CardWrapper from '@/components/shared/CardWrapper.jsx';
 
 export default function NewLoanApplicationPage() {
   const router = useRouter();
+
   const [members, setMembers] = useState([]);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
@@ -19,6 +20,30 @@ export default function NewLoanApplicationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Read memberId query parameter if present on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const memberIdParam = params.get('memberId');
+      if (memberIdParam) {
+        setForm((prev) => ({ ...prev, memberId: memberIdParam }));
+      }
+    }
+  }, []);
+
+  // Auto-resolve branch when member is selected
+  useEffect(() => {
+    if (form.memberId && members.length > 0) {
+      const selectedMember = members.find((m) => m._id === form.memberId);
+      if (selectedMember && selectedMember.branchId) {
+        const bId = selectedMember.branchId._id || selectedMember.branchId;
+        if (bId) {
+          setForm((prev) => ({ ...prev, branchId: bId.toString() }));
+        }
+      }
+    }
+  }, [form.memberId, members]);
 
   useEffect(() => {
     async function loadData() {

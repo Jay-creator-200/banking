@@ -90,10 +90,10 @@ export class ForeclosureService extends BaseService {
       }, { session });
 
       // Post accounting
-      const cashHead = await accountHeadRepository.findOne({ headCode: 'CASH_IN_HAND' });
-      const loanReceivableHead = await accountHeadRepository.findOne({ headCode: 'LOAN_RECEIVABLE' });
-      const interestIncomeHead = await accountHeadRepository.findOne({ headCode: 'INTEREST_INCOME' });
-      const penaltyIncomeHead = await accountHeadRepository.findOne({ headCode: 'PENALTY_INCOME' });
+      const cashHead = await accountHeadRepository.findOne({ code: '11001' });
+      const loanReceivableHead = await accountHeadRepository.findOne({ code: '12001' });
+      const interestIncomeHead = await accountHeadRepository.findOne({ code: '41001' });
+      const penaltyIncomeHead = await accountHeadRepository.findOne({ code: '41002' });
 
       const entries = [];
       if (cashHead) entries.push({ accountHeadId: cashHead._id.toString(), debit: foreclosureCalc.settlementAmount, credit: 0, narration: `Foreclosure collection — ${loan.loanNo}` });

@@ -19,11 +19,13 @@ export class SavingsAccountService extends BaseService {
    * @param {string} userId - Operator User ID
    * @returns {Promise<import('mongoose').Document>} SavingsAccount record
    */
-  async openAccount(data, userId) {
+  async openAccount(data, userId, isAutoCreate = false, externalSession = null) {
     const validatedData = this.validate(openSavingsAccountSchema, data);
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const session = externalSession || (await mongoose.startSession());
+    if (!externalSession) {
+      session.startTransaction();
+    }
     let account;
 
     try {
@@ -36,7 +38,7 @@ export class SavingsAccountService extends BaseService {
       if (member.memberStatus !== 'active') {
         throw AppError.validation(`Member status is not active (current status: ${member.memberStatus})`);
       }
-      if (member.kycStatus !== 'verified') {
+      if (!isAutoCreate && member.kycStatus !== 'verified') {
         throw AppError.validation(`Member KYC must be verified. Current status: ${member.kycStatus}`);
       }
 
@@ -96,11 +98,15 @@ export class SavingsAccountService extends BaseService {
         accountPayload
       );
 
-      await session.commitTransaction();
-      session.endSession();
+      if (!externalSession) {
+        await session.commitTransaction();
+        session.endSession();
+      }
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
+      if (!externalSession) {
+        await session.abortTransaction();
+        session.endSession();
+      }
       this.handleError(error, 'Failed to open savings account');
     }
 

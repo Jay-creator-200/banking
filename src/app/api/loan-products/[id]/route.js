@@ -10,7 +10,8 @@ export async function GET(req, { params }) {
     await dbConnect();
     const session = await auth();
     if (!hasPermission(session, 'loan.view')) throw AppError.forbidden('Insufficient permissions');
-    const product = await loanProductService.getProduct(params.id);
+    const { id } = await params;
+    const product = await loanProductService.getProduct(id);
     return successResponse(product);
   } catch (error) {
     return errorResponse(error);
@@ -22,8 +23,9 @@ export async function PUT(req, { params }) {
     await dbConnect();
     const session = await auth();
     if (!hasPermission(session, 'loan.manage')) throw AppError.forbidden('Insufficient permissions');
+    const { id } = await params;
     const body = await req.json();
-    const product = await loanProductService.updateProduct(params.id, body, session.user.id);
+    const product = await loanProductService.updateProduct(id, body, session.user.id);
     return successResponse(product);
   } catch (error) {
     return errorResponse(error);
@@ -35,7 +37,8 @@ export async function PATCH(req, { params }) {
     await dbConnect();
     const session = await auth();
     if (!hasPermission(session, 'loan.manage')) throw AppError.forbidden('Insufficient permissions');
-    const product = await loanProductService.toggleStatus(params.id, session.user.id);
+    const { id } = await params;
+    const product = await loanProductService.toggleStatus(id, session.user.id);
     return successResponse(product);
   } catch (error) {
     return errorResponse(error);

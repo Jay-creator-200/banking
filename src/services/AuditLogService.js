@@ -1,9 +1,37 @@
 import BaseService from './BaseService.js';
 import auditLogRepository from '../repositories/AuditLogRepository.js';
+import mongoose from 'mongoose';
 
 export class AuditLogService extends BaseService {
   constructor() {
     super(auditLogRepository);
+  }
+
+  /**
+   * Compatibility logger for loan modules.
+   * Maps properties to standard logAction fields.
+   */
+  async log(options = {}) {
+    const { userId, action, module, entityId, description, oldValues, newValues } = options;
+    
+    let refId = null;
+    if (entityId) {
+      try {
+        refId = new mongoose.Types.ObjectId(entityId);
+      } catch (err) {
+        // If entityId is not a valid ObjectId (e.g. system tag or string), ignore conversion
+      }
+    }
+
+    return this.logAction(
+      userId,
+      module || 'LOAN',
+      action,
+      null, // referenceCollection
+      refId,
+      oldValues || null,
+      newValues || (description ? { description } : null)
+    );
   }
 
   /**

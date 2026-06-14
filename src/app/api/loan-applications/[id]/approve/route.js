@@ -10,9 +10,10 @@ export async function POST(req, { params }) {
     await dbConnect();
     const session = await auth();
     if (!hasPermission(session, 'loan.approve')) throw AppError.forbidden('Insufficient permissions');
+    const { id } = await params;
     const body = await req.json();
     const application = await loanApplicationService.approveApplication(
-      { applicationId: params.id, ...body },
+      { applicationId: id, ...body },
       session.user.id
     );
     return successResponse(application, 200, { message: 'Application approved' });

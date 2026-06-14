@@ -82,6 +82,15 @@ export default function MemberDetailPage() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
 
+  // Savings Accounts tab state
+  const [savingsAccounts, setSavingsAccounts] = useState([]);
+  const [savingsLoading, setSavingsLoading] = useState(false);
+
+  // Loans tab state
+  const [loans, setLoans] = useState([]);
+  const [loanApplications, setLoanApplications] = useState([]);
+  const [loansLoading, setLoansLoading] = useState(false);
+
   // Fetch all primary member details
   const fetchMemberDetails = useCallback(async () => {
     setLoading(true);
@@ -191,14 +200,51 @@ export default function MemberDetailPage() {
     }
   }, [id]);
 
+  // Load savings accounts
+  const fetchSavingsAccounts = useCallback(async () => {
+    setSavingsLoading(true);
+    try {
+      const res = await fetch(`/api/savings-accounts?memberId=${id}`);
+      if (res.ok) {
+        const json = await res.json();
+        setSavingsAccounts(json.data || []);
+      }
+    } catch (e) {
+      console.error('Failed to load savings accounts:', e);
+    } finally {
+      setSavingsLoading(false);
+    }
+  }, [id]);
+
+  // Load loans and applications
+  const fetchLoansAndApplications = useCallback(async () => {
+    setLoansLoading(true);
+    try {
+      const loansRes = await fetch(`/api/loans?memberId=${id}`);
+      const appsRes = await fetch(`/api/loan-applications?memberId=${id}`);
+      if (loansRes.ok && appsRes.ok) {
+        const loansJson = await loansRes.json();
+        const appsJson = await appsRes.json();
+        setLoans(loansJson.data || []);
+        setLoanApplications(appsJson.data || []);
+      }
+    } catch (e) {
+      console.error('Failed to load loans and applications:', e);
+    } finally {
+      setLoansLoading(false);
+    }
+  }, [id]);
+
   // Handle Tab Switch Actions
   useEffect(() => {
     if (activeTab === 'nominees') fetchNominees();
     if (activeTab === 'documents') fetchDocuments();
     if (activeTab === 'shares') fetchShares();
     if (activeTab === 'fees') fetchFees();
+    if (activeTab === 'accounts') fetchSavingsAccounts();
+    if (activeTab === 'loans') fetchLoansAndApplications();
     if (activeTab === 'audit') fetchAudits();
-  }, [activeTab, fetchNominees, fetchDocuments, fetchShares, fetchFees, fetchAudits]);
+  }, [activeTab, fetchNominees, fetchDocuments, fetchShares, fetchFees, fetchSavingsAccounts, fetchLoansAndApplications, fetchAudits]);
 
   // Update Member Demographics
   const handleUpdateDetails = async (e) => {
@@ -1247,30 +1293,167 @@ export default function MemberDetailPage() {
         </CardWrapper>
       )}
 
-      {/* 6. Accounts Placeholder */}
+      {/* 6. Savings & Current Accounts */}
       {activeTab === 'accounts' && (
-        <CardWrapper className="p-8 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-450 dark:text-slate-500 flex items-center justify-center mx-auto">
-            <CheckCircle className="w-6 h-6" />
+        <CardWrapper className="p-6 space-y-6">
+          <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-3">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-indigo-650" />
+              Savings & Deposits Accounts
+            </h3>
+            <button
+              onClick={() => router.push(`/dashboard/savings-accounts/open?memberId=${id}`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md shadow-indigo-650/15"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Open Savings Account
+            </button>
           </div>
-          <div>
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white">Savings & Current Accounts</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">This member does not have active savings/current deposit balances. Deposits engine integrations are scheduled for Phase 4.</p>
-          </div>
+
+          {savingsLoading ? (
+            <div className="py-10 text-center">
+              <LoadingSpinner size="sm" />
+            </div>
+          ) : savingsAccounts.length === 0 ? (
+            <div className="text-center py-10">
+              <CheckCircle className="w-8 h-8 text-slate-350 mx-auto mb-2" />
+              <p className="text-xs font-bold text-slate-400">No Savings Accounts Found</p>
+              <p className="text-[10px] text-slate-400 mt-1">Open a savings account to register deposits and cash session teller logs.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {savingsAccounts.map((acc) => (
+                <div key={acc._id} className="p-5 border border-slate-150 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl relative space-y-3.5 hover:shadow-sm transition-all duration-200">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-extrabold text-xs text-slate-850 dark:text-slate-150 font-mono tracking-wide">{acc.accountNo}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{acc.accountType} Account</p>
+                    </div>
+                    <StatusBadge status={acc.status} />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-xs border-t border-b border-slate-100 dark:border-slate-800/60 py-3 font-mono">
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wide">Available Balance</span>
+                      <span className="font-extrabold text-slate-850 dark:text-slate-100 text-sm">₹{acc.availableBalance?.toLocaleString() || '0.00'}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wide">Interest Rate</span>
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400">{acc.interestRate}% p.a.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center text-[10px] text-slate-450 dark:text-slate-500">
+                    <span>Opening Date: {new Date(acc.openingDate).toLocaleDateString()}</span>
+                    <span>Min Balance: ₹{acc.minimumBalance || 1000}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardWrapper>
       )}
 
-      {/* 7. Loans Placeholder */}
+      {/* 7. Loans & Deposit Schemes */}
       {activeTab === 'loans' && (
-        <CardWrapper className="p-8 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-450 dark:text-slate-500 flex items-center justify-center mx-auto">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white">Loans & Deposit Schemes</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Loan portfolio logs and active term deposits ledger are coming soon in Phase 5.</p>
-          </div>
-        </CardWrapper>
+        <div className="space-y-6">
+          {/* Applications list */}
+          <CardWrapper className="p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-indigo-650" />
+                Loan Applications
+              </h3>
+              <button
+                onClick={() => router.push(`/dashboard/loans/applications/new?memberId=${id}`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md shadow-indigo-650/15"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Apply for Loan
+              </button>
+            </div>
+
+            {loansLoading ? (
+              <div className="py-10 text-center"><LoadingSpinner size="sm" /></div>
+            ) : loanApplications.length === 0 ? (
+              <p className="text-xs text-slate-450 text-center py-6 font-bold">No applications registered for this member.</p>
+            ) : (
+              <div className="space-y-3">
+                {loanApplications.map((app) => (
+                  <div key={app._id} className="p-4 border border-slate-150 dark:border-slate-850 rounded-xl flex items-center justify-between hover:bg-slate-50/20 transition-all duration-200">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">{app.applicationNo}</p>
+                        <span className="px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded bg-indigo-50 text-indigo-600 font-mono">
+                          {app.loanProductId?.productName || 'Loan Product'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-1">Purpose: {app.purpose || 'Not specified'}</p>
+                      <p className="text-[9px] text-slate-400 font-mono mt-0.5">Applied on: {new Date(app.applicationDate || app.createdAt).toLocaleDateString()}</p>
+                    </div>
+
+                    <div className="text-right flex flex-col items-end gap-1.5">
+                      <span className="font-extrabold text-sm text-slate-850 dark:text-slate-100 font-mono">₹{app.requestedAmount?.toLocaleString()}</span>
+                      <StatusBadge status={app.applicationStatus} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardWrapper>
+
+          {/* Active Loans list */}
+          <CardWrapper className="p-6 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider pb-3 border-b border-slate-100 dark:border-slate-800/60">
+              Active Loan Accounts
+            </h3>
+
+            {loansLoading ? (
+              <div className="py-10 text-center"><LoadingSpinner size="sm" /></div>
+            ) : loans.length === 0 ? (
+              <p className="text-xs text-slate-450 text-center py-6 font-bold">No active loan accounts.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {loans.map((ln) => (
+                  <div key={ln._id} className="p-5 border border-slate-150 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl relative space-y-3.5 hover:shadow-sm transition-all duration-200">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-extrabold text-xs text-slate-850 dark:text-slate-150 font-mono tracking-wide">{ln.loanNo}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{ln.loanProductId?.productName || 'Personal Loan'}</p>
+                      </div>
+                      <StatusBadge status={ln.loanStatus} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs border-t border-b border-slate-100 dark:border-slate-800/60 py-3 font-mono">
+                      <div>
+                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wide">Outstanding Balance</span>
+                        <span className="font-extrabold text-slate-850 dark:text-slate-100 text-sm">₹{ln.outstandingPrincipal?.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wide">EMI Amount</span>
+                        <span className="font-bold text-slate-850 dark:text-slate-100">₹{ln.emiAmount?.toLocaleString()}/mo</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[10px] text-slate-450 dark:text-slate-500">
+                      <span>Disbursed: {new Date(ln.disbursementDate).toLocaleDateString()}</span>
+                      <span>Next Due: {ln.nextDueDate ? new Date(ln.nextDueDate).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => router.push(`/dashboard/loans/${ln._id}`)}
+                        className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-350 text-[10px] font-bold rounded-lg hover:bg-slate-200 text-center cursor-pointer transition-colors"
+                      >
+                        View Account Details & Schedules
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardWrapper>
+        </div>
       )}
 
       {/* 8. Audit History Tab */}

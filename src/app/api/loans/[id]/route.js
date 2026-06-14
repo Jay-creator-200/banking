@@ -14,12 +14,13 @@ export async function GET(req, { params }) {
     const session = await auth();
     if (!hasPermission(session, 'loan.view')) throw AppError.forbidden('Insufficient permissions');
 
-    const loan = await loanAccountService.getLoanDetail(params.id);
-    const schedule = await loanScheduleService.getSchedule(params.id);
-    const payments = await loanPaymentService.getPaymentHistory(params.id);
-    const paymentSummary = await loanPaymentService.getPaymentSummary(params.id);
+    const { id } = await params;
+    const loan = await loanAccountService.getLoanDetail(id);
+    const schedule = await loanScheduleService.getSchedule(id);
+    const payments = await loanPaymentService.getPaymentHistory(id);
+    const paymentSummary = await loanPaymentService.getPaymentSummary(id);
     const overdueSummary = ['active', 'overdue'].includes(loan.loanStatus)
-      ? await penaltyService.getOverdueSummary(params.id)
+      ? await penaltyService.getOverdueSummary(id)
       : null;
 
     return successResponse({ loan, schedule, payments, paymentSummary, overdueSummary });

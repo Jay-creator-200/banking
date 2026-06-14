@@ -13,9 +13,10 @@ export async function GET(req, { params }) {
     const session = await auth();
     if (!hasPermission(session, 'loan.view')) throw AppError.forbidden('Insufficient permissions');
 
-    const application = await loanApplicationService.getApplicationDetail(params.id);
-    const guarantors = await guarantorService.getByApplication(params.id);
-    const collaterals = await collateralService.getByApplication(params.id);
+    const { id } = await params;
+    const application = await loanApplicationService.getApplicationDetail(id);
+    const guarantors = await guarantorService.getByApplication(id);
+    const collaterals = await collateralService.getByApplication(id);
 
     return successResponse({ application, guarantors, collaterals });
   } catch (error) {
@@ -29,8 +30,9 @@ export async function PUT(req, { params }) {
     const session = await auth();
     if (!hasPermission(session, 'loan.apply')) throw AppError.forbidden('Insufficient permissions');
 
+    const { id } = await params;
     const body = await req.json();
-    const application = await loanApplicationService.updateApplication(params.id, body, session.user.id);
+    const application = await loanApplicationService.updateApplication(id, body, session.user.id);
     return successResponse(application);
   } catch (error) {
     return errorResponse(error);

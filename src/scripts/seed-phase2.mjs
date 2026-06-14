@@ -69,6 +69,7 @@ const coaNodes = [
   // 6. Expense Subgroups
   { name: 'Operating Expenses', code: '51000', type: 'EXPENSE', parentCode: '50000' },
   { name: 'Interest Expenses Ledger', code: '51001', type: 'EXPENSE', parentCode: '51000' },
+  { name: 'Write-off Expense Ledger', code: '51002', type: 'EXPENSE', parentCode: '51000' },
 ];
 
 async function seed() {

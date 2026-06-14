@@ -70,7 +70,7 @@ export class ApprovalService extends BaseService {
         if (transaction && transaction.transactionType === 'SAVINGS_WITHDRAWAL' && transaction.amount > 50000) {
           const User = mongoose.model('User');
           const approver = await User.findById(userId).populate('roleId').session(session);
-          if (!approver || !['BRANCH_MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(approver.roleId.code)) {
+          if (!approver || !['MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(approver.roleId.code)) {
             throw AppError.validation('Withdrawals above ₹50,000 require Branch Manager or Administrator approval.');
           }
         }

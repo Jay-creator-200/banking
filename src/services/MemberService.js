@@ -64,6 +64,20 @@ export class MemberService extends BaseService {
         { session }
       );
 
+      // Create Savings Account Automatically
+      const { SavingsAccountServiceInstance } = await import('./SavingsAccountService.js');
+      await SavingsAccountServiceInstance.openAccount(
+        {
+          memberId: member._id.toString(),
+          branchId: validated.branchId.toString(),
+          accountType: validated.memberCategory === 'senior_citizen' ? 'senior_citizen' : (validated.memberCategory === 'staff' ? 'staff' : 'regular'),
+          openingDeposit: 0,
+        },
+        userId,
+        true, // isAutoCreate
+        session
+      );
+
       // Handle auto-charged membership fee transaction dispatch
       if (autoChargeFee === true) {
         await this.chargeMembershipFee(member, userId, session);

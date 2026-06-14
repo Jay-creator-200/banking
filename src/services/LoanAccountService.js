@@ -91,8 +91,8 @@ export class LoanAccountService extends BaseService {
 
       // Post accounting journal voucher
       // Find account heads (Loan Receivable & Cash In Hand)
-      const loanReceivableHead = await accountHeadRepository.findOne({ headCode: 'LOAN_RECEIVABLE' });
-      const cashHead = await accountHeadRepository.findOne({ headCode: 'CASH_IN_HAND' });
+      const loanReceivableHead = await accountHeadRepository.findOne({ code: '12001' });
+      const cashHead = await accountHeadRepository.findOne({ code: '11001' });
 
       if (loanReceivableHead && cashHead) {
         await ledgerService.createVoucher({
@@ -246,8 +246,8 @@ export class LoanAccountService extends BaseService {
     }
 
     // Post write-off journal entry
-    const loanReceivableHead = await accountHeadRepository.findOne({ headCode: 'LOAN_RECEIVABLE' });
-    const writeoffHead = await accountHeadRepository.findOne({ headCode: 'WRITEOFF_EXPENSE' });
+    const loanReceivableHead = await accountHeadRepository.findOne({ code: '12001' });
+    const writeoffHead = await accountHeadRepository.findOne({ code: '51002' });
     if (loanReceivableHead && writeoffHead) {
       await ledgerService.createVoucher({
         voucherType: 'JOURNAL',

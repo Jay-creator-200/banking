@@ -79,6 +79,31 @@ export default function OpenSavingsAccountPage() {
     }));
   }, [formData.accountType]);
 
+  // Auto-select member if memberId query parameter is provided in URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const memberIdParam = params.get('memberId');
+      if (memberIdParam) {
+        async function fetchPreselectedMember() {
+          try {
+            const res = await fetch(`/api/members/${memberIdParam}`);
+            if (res.ok) {
+              const json = await res.json();
+              if (json.data) {
+                setSelectedMember(json.data);
+                setFormData(prev => ({ ...prev, memberId: json.data._id }));
+              }
+            }
+          } catch (e) {
+            console.error('Failed to fetch preselected member:', e);
+          }
+        }
+        fetchPreselectedMember();
+      }
+    }
+  }, []);
+
   // Search Members
   useEffect(() => {
     if (memberSearch.trim().length < 2) {
@@ -89,7 +114,7 @@ export default function OpenSavingsAccountPage() {
     const delayDebounce = setTimeout(async () => {
       setSearchingMembers(true);
       try {
-        const res = await fetch(`/api/members?kycStatus=verified&memberStatus=active&search=${encodeURIComponent(memberSearch)}`);
+        const res = await fetch(`/api/members?memberStatus=active&search=${encodeURIComponent(memberSearch)}`);
         if (res.ok) {
           const json = await res.json();
           setMemberResults(json.data || []);

@@ -117,6 +117,16 @@ export class CashTransferService extends BaseService {
 
     try {
       if (validated.action === 'approve') {
+        // Pre-approval vault balance check for vault_to_teller
+        if (transfer.transferType === 'vault_to_teller') {
+          const preCheckBalance = await vaultTransactionRepository.getLatestVaultBalance(transfer.branchId);
+          if (preCheckBalance < transfer.amount) {
+            throw AppError.validation(
+              `Insufficient vault balance. Vault has ₹${preCheckBalance.toLocaleString('en-IN')}, requested ₹${transfer.amount.toLocaleString('en-IN')}`
+            );
+          }
+        }
+
         transfer.status = 'completed';
         transfer.approvedBy = userId;
         transfer.approvedAt = new Date();

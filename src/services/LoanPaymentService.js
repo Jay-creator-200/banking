@@ -123,17 +123,51 @@ export class LoanPaymentService extends BaseService {
         updatedBy: userId,
       }, { session });
 
-      // Post accounting journal voucher
+      // Determine which debit account head to use based on payment mode.
+      // CASH → debit Cash-In-Hand (11001)
+      // TRANSFER / SAVINGS → debit member's Savings Deposit Liability (21001)
+      const isTransfer = ['TRANSFER', 'SAVINGS', 'ONLINE'].includes((validated.paymentMode || '').toUpperCase());
+
       const cashHead = await accountHeadRepository.findOne({ code: '11001' });
+      const savingsLiabilityHead = await accountHeadRepository.findOne({ code: '21001' });
       const loanReceivableHead = await accountHeadRepository.findOne({ code: '12001' });
       const interestIncomeHead = await accountHeadRepository.findOne({ code: '41001' });
       const penaltyIncomeHead = await accountHeadRepository.findOne({ code: '41002' });
 
+      // Debit the correct asset/liability account
+      const debitHead = isTransfer ? savingsLiabilityHead : cashHead;
+
       const entries = [];
-      if (cashHead) entries.push({ accountHeadId: cashHead._id.toString(), debit: validated.amount, credit: 0, narration: `EMI collection — ${loan.loanNo}` });
+      if (debitHead) {
+        entries.push({
+          accountHeadId: debitHead._id.toString(),
+          debit: validated.amount,
+          credit: 0,
+          narration: `EMI collection (${validated.paymentMode}) — ${loan.loanNo}`,
+        });
+      }
       if (loanReceivableHead && principalCollected > 0) entries.push({ accountHeadId: loanReceivableHead._id.toString(), debit: 0, credit: principalCollected, narration: `Principal repaid — ${loan.loanNo}` });
       if (interestIncomeHead && interestCollected > 0) entries.push({ accountHeadId: interestIncomeHead._id.toString(), debit: 0, credit: interestCollected, narration: `Interest collected — ${loan.loanNo}` });
       if (penaltyIncomeHead && penaltyCollected > 0) entries.push({ accountHeadId: penaltyIncomeHead._id.toString(), debit: 0, credit: penaltyCollected, narration: `Penalty collected — ${loan.loanNo}` });
+
+      // If payment is via savings transfer, debit the member's savings account balance
+      if (isTransfer && validated.savingsAccountNo) {
+        const SavingsAccount = mongoose.model('SavingsAccount');
+        const savAcc = await SavingsAccount.findOne({ accountNo: validated.savingsAccountNo }).session(session);
+        if (!savAcc) {
+          throw AppError.notFound(`Savings account ${validated.savingsAccountNo} not found for TRANSFER payment`);
+        }
+        if (savAcc.availableBalance < validated.amount) {
+          throw AppError.validation(`Insufficient savings balance. Available: ₹${savAcc.availableBalance}, Required: ₹${validated.amount}`);
+        }
+        savAcc.currentBalance = Math.max(0, Math.round((savAcc.currentBalance - validated.amount) * 100) / 100);
+        savAcc.availableBalance = Math.max(0, Math.round((savAcc.availableBalance - validated.amount) * 100) / 100);
+        savAcc.updatedBy = userId;
+        await savAcc.save({ session });
+
+        // Store savings account reference on payment for reversal purposes
+        payment.remarks = `${payment.remarks || ''} [Savings: ${validated.savingsAccountNo}]`.trim();
+      }
 
       if (entries.length >= 2) {
         const voucher = await ledgerService.createVoucher({

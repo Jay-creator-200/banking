@@ -90,17 +90,48 @@ export class ForeclosureService extends BaseService {
       }, { session });
 
       // Post accounting
+      // Determine which debit account head to use based on payment mode.
+      // CASH → debit Cash-In-Hand (11001)
+      // TRANSFER / SAVINGS → debit Savings Deposit Liability (21001)
+      const isTransfer = ['TRANSFER', 'SAVINGS', 'ONLINE'].includes((validated.paymentMode || '').toUpperCase());
+
       const cashHead = await accountHeadRepository.findOne({ code: '11001' });
+      const savingsLiabilityHead = await accountHeadRepository.findOne({ code: '21001' });
       const loanReceivableHead = await accountHeadRepository.findOne({ code: '12001' });
       const interestIncomeHead = await accountHeadRepository.findOne({ code: '41001' });
       const penaltyIncomeHead = await accountHeadRepository.findOne({ code: '41002' });
 
+      const debitHead = isTransfer ? savingsLiabilityHead : cashHead;
+
       const entries = [];
-      if (cashHead) entries.push({ accountHeadId: cashHead._id.toString(), debit: foreclosureCalc.settlementAmount, credit: 0, narration: `Foreclosure collection — ${loan.loanNo}` });
+      if (debitHead) {
+        entries.push({
+          accountHeadId: debitHead._id.toString(),
+          debit: foreclosureCalc.settlementAmount,
+          credit: 0,
+          narration: `Foreclosure collection (${validated.paymentMode}) — ${loan.loanNo}`,
+        });
+      }
       if (loanReceivableHead && foreclosureCalc.outstandingPrincipal > 0) entries.push({ accountHeadId: loanReceivableHead._id.toString(), debit: 0, credit: foreclosureCalc.outstandingPrincipal, narration: `Principal foreclosed — ${loan.loanNo}` });
       if (interestIncomeHead && foreclosureCalc.outstandingInterest > 0) entries.push({ accountHeadId: interestIncomeHead._id.toString(), debit: 0, credit: foreclosureCalc.outstandingInterest, narration: `Interest foreclosed — ${loan.loanNo}` });
       if (penaltyIncomeHead && (foreclosureCalc.outstandingPenalty + foreclosureCalc.preClosureCharge) > 0) {
         entries.push({ accountHeadId: penaltyIncomeHead._id.toString(), debit: 0, credit: foreclosureCalc.outstandingPenalty + foreclosureCalc.preClosureCharge, narration: `Pre-closure charges — ${loan.loanNo}` });
+      }
+
+      // Debit savings account if payment via transfer
+      if (isTransfer && validated.savingsAccountNo) {
+        const SavingsAccount = mongoose.model('SavingsAccount');
+        const savAcc = await SavingsAccount.findOne({ accountNo: validated.savingsAccountNo }).session(session);
+        if (!savAcc) {
+          throw AppError.notFound(`Savings account ${validated.savingsAccountNo} not found for TRANSFER payment`);
+        }
+        if (savAcc.availableBalance < foreclosureCalc.settlementAmount) {
+          throw AppError.validation(`Insufficient savings balance. Available: ₹${savAcc.availableBalance}, Required: ₹${foreclosureCalc.settlementAmount}`);
+        }
+        savAcc.currentBalance = Math.max(0, Math.round((savAcc.currentBalance - foreclosureCalc.settlementAmount) * 100) / 100);
+        savAcc.availableBalance = Math.max(0, Math.round((savAcc.availableBalance - foreclosureCalc.settlementAmount) * 100) / 100);
+        savAcc.updatedBy = userId;
+        await savAcc.save({ session });
       }
 
       if (entries.length >= 2) {

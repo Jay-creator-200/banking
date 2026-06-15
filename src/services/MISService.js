@@ -72,7 +72,7 @@ export class MISService extends BaseService {
         startDate,
         maturityDate,
         nextPayoutDate,
-        status: 'active',
+        status: 'pending_funding',
         createdBy: userId,
         updatedBy: userId,
       };
@@ -118,12 +118,21 @@ export class MISService extends BaseService {
 
   /**
    * Post-approval hook called when transaction is approved.
+   * Activates the MIS account (moves it from pending_funding → active)
+   * and records the balanceAfter on the transaction.
    */
   async handlePostApprovalDeposit(transaction, userId, session) {
     const misAccount = await misAccountRepository.model.findOne({ misAccountNo: transaction.accountId }).session(session);
     if (!misAccount) throw AppError.notFound(`MIS Account ${transaction.accountId} not found`);
 
-    // The principal is already captured. We just set balanceAfter.
+    // Activate the account now that funding is confirmed
+    if (misAccount.status === 'pending_funding') {
+      misAccount.status = 'active';
+      misAccount.updatedBy = userId;
+      await misAccount.save({ session });
+    }
+
+    // Record balanceAfter on the transaction
     transaction.balanceAfter = misAccount.principalAmount;
     await transaction.save({ session });
   }
@@ -200,7 +209,7 @@ export class MISService extends BaseService {
   async processDuePayouts(userId) {
     const today = new Date();
     const dueAccounts = await misAccountRepository.model.find({
-      status: 'active',
+      status: 'active', // pending_funding accounts must never receive payouts
       nextPayoutDate: { $lte: today },
       isDeleted: false,
     });

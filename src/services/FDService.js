@@ -74,7 +74,7 @@ export class FDService extends BaseService {
         interestAmount: interestCalc.interestAmount,
         maturityAmount: interestCalc.maturityAmount,
         paymentMode: validated.paymentMode || 'maturity',
-        status: 'active',
+        status: 'pending_funding',
         createdBy: userId,
         updatedBy: userId,
       };
@@ -120,12 +120,21 @@ export class FDService extends BaseService {
 
   /**
    * Post-approval hook called when transaction is approved.
+   * Activates the FD account (moves it from pending_funding → active)
+   * and records the balanceAfter on the transaction.
    */
   async handlePostApprovalDeposit(transaction, userId, session) {
     const fdAccount = await fdAccountRepository.model.findOne({ fdAccountNo: transaction.accountId }).session(session);
     if (!fdAccount) throw AppError.notFound(`FD Account ${transaction.accountId} not found`);
 
-    // The principal is already captured. We just set balanceAfter.
+    // Activate the account now that funding is confirmed
+    if (fdAccount.status === 'pending_funding') {
+      fdAccount.status = 'active';
+      fdAccount.updatedBy = userId;
+      await fdAccount.save({ session });
+    }
+
+    // Record balanceAfter on the transaction
     transaction.balanceAfter = fdAccount.principalAmount;
     await transaction.save({ session });
   }

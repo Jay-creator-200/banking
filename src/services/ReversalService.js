@@ -5,6 +5,7 @@ import approvalService from './ApprovalService.js';
 import sequenceService from './SequenceService.js';
 import ledgerService from './LedgerService.js';
 import ledgerEntryRepository from '../repositories/LedgerEntryRepository.js';
+import auditLogService from './AuditLogService.js';
 import { AppError } from '../utils/error-handler.js';
 import mongoose from 'mongoose';
 
@@ -82,6 +83,8 @@ export class ReversalService extends BaseService {
 
   /**
    * Approve a reversal request (called via approval queue callback).
+   * Reverses the GL entries AND the affected module sub-ledger balances
+   * inside a single atomic MongoDB session.
    *
    * @param {string} reversalId - Reversal request ID
    * @param {string} userId - Approver ID
@@ -148,6 +151,12 @@ export class ReversalService extends BaseService {
         { session }
       );
 
+      // ----------------------------------------------------------------
+      // SUB-LEDGER CORRECTION — restore affected module balances
+      // ----------------------------------------------------------------
+      await this._reverseModuleSubLedger(transaction, userId, session, reversal.reason);
+      // ----------------------------------------------------------------
+
       // Update original transaction status to REVERSED
       transaction.status = 'REVERSED';
       transaction.updatedBy = userId;
@@ -160,9 +169,307 @@ export class ReversalService extends BaseService {
       reversal.reversalTransactionId = compensatingTxn._id;
       await reversal.save({ session });
 
+      await auditLogService.log({
+        userId,
+        action: 'REVERSAL_APPROVED',
+        module: 'REVERSAL',
+        entityId: reversal._id.toString(),
+        description: `Reversal approved for Txn ${transaction.transactionNo}. Compensating Txn: ${reversalTxnNo}. Module balances adjusted.`,
+      });
+
       return reversal;
     } catch (error) {
       this.handleError(error, 'Failed to approve transaction reversal');
+    }
+  }
+
+  /**
+   * Reverse the module-level sub-ledger balance that was changed
+   * when the original transaction was approved.
+   *
+   * Each case mirrors the exact opposite of the approveTransaction hooks
+   * in TransactionService.js.
+   *
+   * @param {import('mongoose').Document} transaction - Original POSTED transaction
+   * @param {string} userId - Approver ID
+   * @param {import('mongoose').ClientSession} session - DB Session
+   * @param {string} reason - Reversal reason (for narration)
+   */
+  async _reverseModuleSubLedger(transaction, userId, session, reason) {
+    const txnType = transaction.transactionType;
+    const amount = transaction.amount;
+
+    // ------------------------------------------------------------------
+    // 1. SAVINGS DEPOSIT reversal → deduct from savings balance
+    // ------------------------------------------------------------------
+    if (txnType === 'SAVINGS_DEPOSIT' || txnType === 'INTEREST_CREDIT') {
+      const SavingsAccount = mongoose.model('SavingsAccount');
+      const account = await SavingsAccount.findOne({ accountNo: transaction.accountId }).session(session);
+      if (!account) throw AppError.notFound(`Savings account ${transaction.accountId} not found for reversal`);
+
+      account.currentBalance = Math.max(0, Math.round((account.currentBalance - amount) * 100) / 100);
+      account.availableBalance = Math.max(0, Math.round((account.availableBalance - amount) * 100) / 100);
+      account.updatedBy = userId;
+      await account.save({ session });
+
+      await auditLogService.log({
+        userId,
+        action: 'REVERSAL_SAVINGS_DEPOSIT',
+        module: 'SAVINGS',
+        entityId: account._id.toString(),
+        description: `Reversal: Deducted ₹${amount} from savings account ${account.accountNo}. Reason: ${reason}`,
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // 2. SAVINGS WITHDRAWAL reversal → restore savings balance
+    //    (available balance was already decremented on createTransaction;
+    //     currentBalance was decremented on approveTransaction)
+    // ------------------------------------------------------------------
+    else if (txnType === 'SAVINGS_WITHDRAWAL') {
+      const SavingsAccount = mongoose.model('SavingsAccount');
+      const account = await SavingsAccount.findOne({ accountNo: transaction.accountId }).session(session);
+      if (!account) throw AppError.notFound(`Savings account ${transaction.accountId} not found for reversal`);
+
+      account.currentBalance = Math.round((account.currentBalance + amount) * 100) / 100;
+      account.availableBalance = Math.round((account.availableBalance + amount) * 100) / 100;
+      account.updatedBy = userId;
+      await account.save({ session });
+
+      await auditLogService.log({
+        userId,
+        action: 'REVERSAL_SAVINGS_WITHDRAWAL',
+        module: 'SAVINGS',
+        entityId: account._id.toString(),
+        description: `Reversal: Restored ₹${amount} to savings account ${account.accountNo}. Reason: ${reason}`,
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // 3. LOAN EMI PAYMENT — find the payment record and reverse loan outstanding
+    // ------------------------------------------------------------------
+    else if (txnType === 'LOAN_INSTALLMENT') {
+      // Find the loan payment record linked to this transaction via voucherId or find by narration reference
+      const LoanPayment = mongoose.model('LoanPayment');
+      const LoanAccount = mongoose.model('Loan');
+      const LoanSchedule = mongoose.model('LoanSchedule');
+
+      // The payment record that was created in LoanPaymentService stores the loan reference
+      // We can locate it by matching the transaction's accountId (loanNo) and approvedAt proximity
+      const payment = await LoanPayment.findOne({
+        loanId: { $exists: true },
+        isDeleted: false,
+      })
+        .sort('-createdAt')
+        .session(session)
+        .exec();
+
+      // Prefer locating via sourceId on the transaction if set
+      const loan = await LoanAccount.findOne({
+        loanNo: transaction.accountId,
+        isDeleted: false,
+      }).session(session);
+
+      if (loan) {
+        // Restore outstanding values by reversing collected amounts
+        // Read the last payment for this loan around the transaction's approvedAt time
+        const loanPayment = await LoanPayment.findOne({
+          loanId: loan._id,
+          isDeleted: false,
+          createdAt: { $gte: new Date(transaction.approvedAt.getTime() - 60000) },
+        })
+          .sort('-createdAt')
+          .session(session)
+          .exec();
+
+        if (loanPayment) {
+          loan.outstandingPrincipal = Math.round((loan.outstandingPrincipal + loanPayment.principalCollected) * 100) / 100;
+          loan.outstandingInterest = Math.round((loan.outstandingInterest + loanPayment.interestCollected) * 100) / 100;
+          loan.overdueAmount = Math.round((loan.overdueAmount + loanPayment.penaltyCollected) * 100) / 100;
+          loan.penaltyAccrued = Math.round((loan.penaltyAccrued + loanPayment.penaltyCollected) * 100) / 100;
+
+          // Reopen loan if it was closed by this payment
+          if (loan.loanStatus === 'closed' && loanPayment.principalCollected > 0) {
+            loan.loanStatus = 'active';
+            loan.closedAt = null;
+          }
+
+          loan.updatedBy = userId;
+          await loan.save({ session });
+
+          // Reverse schedule installment payment status for the affected installments
+          if (loanPayment.scheduleId) {
+            const schedule = await LoanSchedule.findById(loanPayment.scheduleId).session(session);
+            if (schedule && schedule.paymentStatus === 'paid') {
+              schedule.principalPaid = Math.max(0, (schedule.principalPaid || 0) - loanPayment.principalCollected);
+              schedule.interestPaid = Math.max(0, (schedule.interestPaid || 0) - loanPayment.interestCollected);
+              schedule.penaltyPaid = Math.max(0, (schedule.penaltyPaid || 0) - loanPayment.penaltyCollected);
+              schedule.paymentStatus = schedule.principalPaid >= schedule.principalDue ? 'paid' : 'pending';
+              await schedule.save({ session });
+            }
+          }
+
+          // Soft-delete the reversed payment record
+          loanPayment.isDeleted = true;
+          loanPayment.updatedBy = userId;
+          await loanPayment.save({ session });
+
+          await auditLogService.log({
+            userId,
+            action: 'REVERSAL_LOAN_PAYMENT',
+            module: 'LOAN',
+            entityId: loan._id.toString(),
+            description: `Reversal: Restored loan ${loan.loanNo} outstanding. Principal +₹${loanPayment.principalCollected}, Interest +₹${loanPayment.interestCollected}, Penalty +₹${loanPayment.penaltyCollected}. Reason: ${reason}`,
+          });
+        }
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // 4. FD DEPOSIT reversal — FD account principal stays (it was already set)
+    //    but we restore funding savings balance if transfer-funded
+    // ------------------------------------------------------------------
+    else if (txnType === 'FD_DEPOSIT' || txnType === 'FD_DEPOSIT_TRANSFER') {
+      if (txnType === 'FD_DEPOSIT_TRANSFER' && transaction.referenceNo) {
+        const SavingsAccount = mongoose.model('SavingsAccount');
+        const fundingAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+        if (fundingAcc) {
+          fundingAcc.currentBalance = Math.round((fundingAcc.currentBalance + amount) * 100) / 100;
+          fundingAcc.availableBalance = Math.round((fundingAcc.availableBalance + amount) * 100) / 100;
+          fundingAcc.updatedBy = userId;
+          await fundingAcc.save({ session });
+        }
+      }
+      // Mark the FD account back to pending_funding
+      const FDAccount = mongoose.model('FDAccount');
+      const fdAcc = await FDAccount.findOne({ fdAccountNo: transaction.accountId }).session(session);
+      if (fdAcc) {
+        fdAcc.status = 'pending_funding';
+        fdAcc.updatedBy = userId;
+        await fdAcc.save({ session });
+
+        await auditLogService.log({
+          userId,
+          action: 'REVERSAL_FD_DEPOSIT',
+          module: 'DEPOSITS',
+          entityId: fdAcc._id.toString(),
+          description: `Reversal: FD Account ${fdAcc.fdAccountNo} reverted to pending_funding. Reason: ${reason}`,
+        });
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // 5. RD DEPOSIT reversal — deduct from RD totalDepositAmount
+    // ------------------------------------------------------------------
+    else if (txnType === 'RD_DEPOSIT' || txnType === 'RD_DEPOSIT_TRANSFER') {
+      const RDAccount = mongoose.model('RDAccount');
+      const rdAcc = await RDAccount.findOne({ rdAccountNo: transaction.accountId }).session(session);
+      if (rdAcc) {
+        rdAcc.totalDepositAmount = Math.max(0, Math.round((rdAcc.totalDepositAmount - amount) * 100) / 100);
+        rdAcc.updatedBy = userId;
+        await rdAcc.save({ session });
+
+        await auditLogService.log({
+          userId,
+          action: 'REVERSAL_RD_DEPOSIT',
+          module: 'DEPOSITS',
+          entityId: rdAcc._id.toString(),
+          description: `Reversal: Deducted ₹${amount} from RD Account ${rdAcc.rdAccountNo} total deposit. Reason: ${reason}`,
+        });
+      }
+
+      // Restore RD installment status
+      const RDInstallment = mongoose.model('RDInstallment');
+      const paidInstallment = await RDInstallment.findOne({
+        rdAccountId: rdAcc?._id,
+        paidDate: { $gte: new Date(transaction.approvedAt.getTime() - 60000) },
+        status: 'paid',
+      })
+        .sort('-installmentNo')
+        .session(session)
+        .exec();
+
+      if (paidInstallment) {
+        paidInstallment.paidAmount = 0;
+        paidInstallment.paidDate = null;
+        paidInstallment.status = 'pending';
+        await paidInstallment.save({ session });
+      }
+
+      if (txnType === 'RD_DEPOSIT_TRANSFER' && transaction.referenceNo) {
+        const SavingsAccount = mongoose.model('SavingsAccount');
+        const fundingAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+        if (fundingAcc) {
+          fundingAcc.currentBalance = Math.round((fundingAcc.currentBalance + amount) * 100) / 100;
+          fundingAcc.availableBalance = Math.round((fundingAcc.availableBalance + amount) * 100) / 100;
+          fundingAcc.updatedBy = userId;
+          await fundingAcc.save({ session });
+        }
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // 6. DDS DEPOSIT reversal — deduct from DDS totalDeposit
+    // ------------------------------------------------------------------
+    else if (txnType === 'DDS_DEPOSIT' || txnType === 'DDS_DEPOSIT_TRANSFER') {
+      const DDSAccount = mongoose.model('DDSAccount');
+      const ddsAcc = await DDSAccount.findOne({ ddsAccountNo: transaction.accountId }).session(session);
+      if (ddsAcc) {
+        ddsAcc.totalDeposit = Math.max(0, Math.round((ddsAcc.totalDeposit - amount) * 100) / 100);
+        ddsAcc.updatedBy = userId;
+        await ddsAcc.save({ session });
+
+        await auditLogService.log({
+          userId,
+          action: 'REVERSAL_DDS_DEPOSIT',
+          module: 'DEPOSITS',
+          entityId: ddsAcc._id.toString(),
+          description: `Reversal: Deducted ₹${amount} from DDS Account ${ddsAcc.ddsAccountNo} total deposit. Reason: ${reason}`,
+        });
+      }
+
+      if (txnType === 'DDS_DEPOSIT_TRANSFER' && transaction.referenceNo) {
+        const SavingsAccount = mongoose.model('SavingsAccount');
+        const fundingAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+        if (fundingAcc) {
+          fundingAcc.currentBalance = Math.round((fundingAcc.currentBalance + amount) * 100) / 100;
+          fundingAcc.availableBalance = Math.round((fundingAcc.availableBalance + amount) * 100) / 100;
+          fundingAcc.updatedBy = userId;
+          await fundingAcc.save({ session });
+        }
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // 7. MIS DEPOSIT reversal — mark MIS back to pending_funding
+    // ------------------------------------------------------------------
+    else if (txnType === 'MIS_DEPOSIT' || txnType === 'MIS_DEPOSIT_TRANSFER') {
+      const MISAccount = mongoose.model('MISAccount');
+      const misAcc = await MISAccount.findOne({ misAccountNo: transaction.accountId }).session(session);
+      if (misAcc) {
+        misAcc.status = 'pending_funding';
+        misAcc.updatedBy = userId;
+        await misAcc.save({ session });
+
+        await auditLogService.log({
+          userId,
+          action: 'REVERSAL_MIS_DEPOSIT',
+          module: 'DEPOSITS',
+          entityId: misAcc._id.toString(),
+          description: `Reversal: MIS Account ${misAcc.misAccountNo} reverted to pending_funding. Reason: ${reason}`,
+        });
+      }
+
+      if (txnType === 'MIS_DEPOSIT_TRANSFER' && transaction.referenceNo) {
+        const SavingsAccount = mongoose.model('SavingsAccount');
+        const fundingAcc = await SavingsAccount.findOne({ accountNo: transaction.referenceNo }).session(session);
+        if (fundingAcc) {
+          fundingAcc.currentBalance = Math.round((fundingAcc.currentBalance + amount) * 100) / 100;
+          fundingAcc.availableBalance = Math.round((fundingAcc.availableBalance + amount) * 100) / 100;
+          fundingAcc.updatedBy = userId;
+          await fundingAcc.save({ session });
+        }
+      }
     }
   }
 

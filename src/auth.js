@@ -94,8 +94,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (!isMatch) {
               try {
                 const MemberPortalAccountModel = mongoose.model('MemberPortalAccount');
+                const newAttempts = (memberAccount.failedLoginAttempts || 0) + 1;
+                const shouldLock = newAttempts >= 5;
                 await MemberPortalAccountModel.findByIdAndUpdate(memberAccount._id, {
                   $inc: { failedLoginAttempts: 1 },
+                  ...(shouldLock ? { isLocked: true } : {}),
                 });
                 await LoginLog.create({
                   email: identifier,
@@ -103,7 +106,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                   ipAddress: ip,
                   userAgent,
                 });
-              } catch (_) {}
+                if (shouldLock) {
+                  console.warn(`[AUTH] Member account locked after ${newAttempts} failed attempts — ${identifier}`);
+                  // Dispatch security alert (non-fatal)
+                  try {
+                    const { default: ReminderEngineInstance } = await import('./services/ReminderEngine.js');
+                    await ReminderEngineInstance.sendSecurityAlert({
+                      memberId: memberAccount.memberId._id,
+                      action: 'Account Locked — Too Many Failed Login Attempts',
+                      ip,
+                      userAgent,
+                    });
+                  } catch (_) {}
+                  throw new Error('Account has been locked after too many failed attempts. Contact support.');
+                }
+              } catch (lockErr) {
+                if (lockErr.message?.includes('locked')) throw lockErr;
+              }
               return null;
             }
 
@@ -195,8 +214,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           if (!isMatch) {
             try {
+              const newAttempts = (user.failedLoginAttempts || 0) + 1;
+              const shouldLock = newAttempts >= 5;
               await User.findByIdAndUpdate(user._id, {
                 $inc: { failedLoginAttempts: 1 },
+                ...(shouldLock ? { isLocked: true } : {}),
               });
               await LoginLog.create({
                 email: user.email,
@@ -205,7 +227,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 ipAddress: ip,
                 userAgent,
               });
-            } catch (_) {}
+              if (shouldLock) {
+                console.warn(`[AUTH] Employee account locked after ${newAttempts} failed attempts — ${user.email}`);
+                throw new Error('Account has been locked after too many failed attempts. Contact your administrator.');
+              }
+            } catch (lockErr) {
+              if (lockErr.message?.includes('locked')) throw lockErr;
+            }
             return null;
           }
 

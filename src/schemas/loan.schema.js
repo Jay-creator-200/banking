@@ -105,6 +105,7 @@ export const recordPaymentSchema = z.object({
   paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI']),
   paymentDate: z.string().optional().nullable(),
   sessionId: objectIdSchema.optional().nullable(),
+  savingsAccountNo: z.string().trim().optional().nullable(), // required when paymentMode is TRANSFER
   remarks: z.string().trim().max(500).optional().nullable(),
 });
 
@@ -114,6 +115,7 @@ export const foreclosureSchema = z.object({
   loanId: objectIdSchema,
   paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI']),
   sessionId: objectIdSchema.optional().nullable(),
+  savingsAccountNo: z.string().trim().optional().nullable(), // required when paymentMode is TRANSFER
   remarks: z.string().trim().max(500).optional().nullable(),
 });
 

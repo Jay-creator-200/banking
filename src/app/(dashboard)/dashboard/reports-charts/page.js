@@ -86,7 +86,7 @@ export default function ReportsChartsPage() {
             <CardWrapper className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Today's Collections</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Today&apos;s Collections</span>
                   <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-100 mt-1">
                     ₹{dashboardData.stats.todayCollection.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </h3>
@@ -101,7 +101,7 @@ export default function ReportsChartsPage() {
             <CardWrapper className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Today's Withdrawals</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Today&apos;s Withdrawals</span>
                   <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-100 mt-1">
                     ₹{dashboardData.stats.todayWithdrawal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </h3>

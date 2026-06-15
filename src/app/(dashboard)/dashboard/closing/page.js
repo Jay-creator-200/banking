@@ -200,7 +200,7 @@ export default function ClosingPage() {
                 </div>
                 <h4 className="text-sm font-bold text-slate-850 dark:text-slate-150">Business Day End Closing</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                  Advances the society's active posting date, verifies that teller cash books match actual drawer assets, and locks journal postings.
+                  Advances the society&apos;s active posting date, verifies that teller cash books match actual drawer assets, and locks journal postings.
                 </p>
               </div>
               <button

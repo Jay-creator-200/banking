@@ -307,7 +307,7 @@ export default function AdminCommunications() {
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                   <Send className="w-4 h-4 text-indigo-500" /> Send Individual Alert
                 </h3>
-                <p className="text-[10px] text-slate-400 mt-1">Dispatches ad-hoc notifications directly to a member's preferred communication channels.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Dispatches ad-hoc notifications directly to a member&apos;s preferred communication channels.</p>
               </div>
 
               {individualSuccess && (

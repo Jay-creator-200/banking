@@ -24,6 +24,10 @@ export default auth((req) => {
 
   if (isAuthPage) {
     if (isLoggedIn) {
+      const role = req.auth?.user?.roleCode;
+      if (role === 'MEMBER') {
+        return NextResponse.redirect(new URL('/member/dashboard', nextUrl));
+      }
       return NextResponse.redirect(new URL('/dashboard', nextUrl));
     }
     return NextResponse.next();
@@ -38,6 +42,19 @@ export default auth((req) => {
     return NextResponse.redirect(
       new URL(`/login?callbackUrl=${encodedCallback}`, nextUrl)
     );
+  }
+
+  // Enforce portal isolation for logged-in users
+  if (isLoggedIn) {
+    const role = req.auth?.user?.roleCode;
+    const isMemberPath = nextUrl.pathname.startsWith('/member');
+    
+    if (role === 'MEMBER' && !isMemberPath) {
+      return NextResponse.redirect(new URL('/member/dashboard', nextUrl));
+    }
+    if (role !== 'MEMBER' && isMemberPath) {
+      return NextResponse.redirect(new URL('/dashboard', nextUrl));
+    }
   }
 
   return NextResponse.next();

@@ -15,6 +15,10 @@ import Permission from '@/models/Permission.js';
 import LoginLog from '@/models/LoginLog.js';
 // Role is registered via User.js populate dependency — import explicitly to be safe
 import '@/models/Role.js';
+import '@/models/Member.js';
+import '@/models/MemberPortalAccount.js';
+import '@/models/Notification.js';
+import '@/models/NotificationPreference.js';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -49,6 +53,101 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           })
             .populate('roleId')
             .lean();
+
+          let memberAccount = null;
+          if (!user) {
+            const MemberPortalAccount = mongoose.model('MemberPortalAccount');
+            const Member = mongoose.model('Member');
+            
+            // Allow logging in by email or mobile as username
+            const memberObj = await Member.findOne({
+              $or: [{ email: identifier }, { mobile: identifier }],
+            }).lean();
+
+            const queryObj = { username: identifier };
+            if (memberObj) {
+              queryObj.memberId = memberObj._id;
+            }
+
+            memberAccount = await MemberPortalAccount.findOne({
+              $or: [queryObj, { username: identifier }],
+            })
+              .populate('memberId')
+              .lean();
+          }
+
+          if (!user && memberAccount) {
+            console.log('[AUTH] Member portal login attempt —', memberAccount.username);
+            if (memberAccount.isLocked) {
+              try {
+                await LoginLog.create({
+                  email: identifier,
+                  loginStatus: 'FAILED',
+                  ipAddress: ip,
+                  userAgent,
+                });
+              } catch (_) {}
+              throw new Error('Account is locked. Contact support.');
+            }
+
+            const isMatch = await bcrypt.compare(password, memberAccount.password);
+            if (!isMatch) {
+              try {
+                const MemberPortalAccountModel = mongoose.model('MemberPortalAccount');
+                await MemberPortalAccountModel.findByIdAndUpdate(memberAccount._id, {
+                  $inc: { failedLoginAttempts: 1 },
+                });
+                await LoginLog.create({
+                  email: identifier,
+                  loginStatus: 'FAILED',
+                  ipAddress: ip,
+                  userAgent,
+                });
+              } catch (_) {}
+              return null;
+            }
+
+            // Successful member login
+            try {
+              const MemberPortalAccountModel = mongoose.model('MemberPortalAccount');
+              await MemberPortalAccountModel.findByIdAndUpdate(memberAccount._id, {
+                lastLoginAt: new Date(),
+                lastLoginIp: ip,
+                failedLoginAttempts: 0,
+              });
+              await LoginLog.create({
+                email: identifier,
+                userId: memberAccount.memberId._id,
+                loginStatus: 'SUCCESS',
+                ipAddress: ip,
+                userAgent,
+              });
+
+              // Send security alert for new login
+              const { default: ReminderEngineInstance } = await import('./services/ReminderEngine.js');
+              await ReminderEngineInstance.sendSecurityAlert({
+                memberId: memberAccount.memberId._id,
+                action: 'New Login',
+                ip,
+                userAgent,
+              });
+            } catch (e) {
+              console.warn('[AUTH] Failed post-member-login updates:', e.message);
+            }
+
+            return {
+              id: memberAccount.memberId._id.toString(),
+              fullName: memberAccount.memberId.fullName,
+              email: memberAccount.memberId.email || '',
+              username: memberAccount.username,
+              roleId: null,
+              roleCode: 'MEMBER',
+              branchId: memberAccount.memberId.branchId ? memberAccount.memberId.branchId.toString() : null,
+              branchCode: 'MBR',
+              branchName: 'Member Portal',
+              permissions: [],
+            };
+          }
 
           if (!user) {
             console.log('[AUTH] No user found for identifier:', identifier);

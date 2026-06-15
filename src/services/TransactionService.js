@@ -268,6 +268,16 @@ export class TransactionService extends BaseService {
         await ShareLedger.findOneAndUpdate({ transactionId: transaction._id }, { status: 'active' }).session(session);
       }
 
+      // Trigger transaction notifications in the background (post-commit)
+      setTimeout(async () => {
+        try {
+          const { default: notificationService } = await import('./NotificationService.js');
+          await notificationService.triggerTransactionAlert(transaction._id.toString());
+        } catch (err) {
+          console.error('[Notification Trigger] Failed to dispatch alert:', err.message);
+        }
+      }, 100);
+
       return transaction;
     } catch (error) {
       this.handleError(error, 'Failed to approve and post transaction');

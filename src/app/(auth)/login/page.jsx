@@ -77,7 +77,7 @@ function LoginForm() {
   return (
     <CardWrapper
       title="Access Core Terminal"
-      subtitle="Provide employee credentials to initialize cooperative ledger session"
+      subtitle="Provide employee or member credentials to initialize cooperative session"
       className="w-full max-w-md bg-white/80 dark:bg-slate-950/80 backdrop-blur-md"
     >
       <FormWrapper
@@ -138,7 +138,7 @@ function LoginForm() {
       </FormWrapper>
 
       <div className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
-        Authorized Cooperative personnel only. Actions are bound by audit covenants.
+        Authorized personnel and portal members only. Actions are bound by audit covenants.
       </div>
     </CardWrapper>
   );

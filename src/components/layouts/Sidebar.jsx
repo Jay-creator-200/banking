@@ -27,7 +27,8 @@ import {
   TrendingUp,
   Coins,
   BarChart3,
-  LibraryBig
+  LibraryBig,
+  MessageSquare
 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes.js';
 import { APP_CONFIG } from '@/constants/app-config.js';
@@ -91,6 +92,7 @@ const navigationGroups = [
   {
     title: 'Auditing & Security',
     items: [
+      { label: 'Communications Desk', href: '/dashboard/communications', icon: MessageSquare },
       { label: 'Login Audits', href: ROUTES.DASHBOARD.LOGIN_LOGS, icon: ShieldAlert },
       { label: 'Audit Trail', href: ROUTES.DASHBOARD.AUDIT, icon: History },
     ]

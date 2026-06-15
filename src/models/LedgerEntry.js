@@ -48,6 +48,29 @@ const LedgerEntrySchema = new mongoose.Schema(
       ref: 'Member',
       index: true,
     },
+    debitAmount: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: [0, 'Debit amount cannot be negative'],
+    },
+    creditAmount: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: [0, 'Credit amount cannot be negative'],
+    },
+    balanceAfterTransaction: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    transactionDate: {
+      type: Date,
+      required: [true, 'Transaction date is required'],
+      default: Date.now,
+      index: true,
+    },
     narration: {
       type: String,
       trim: true,
@@ -61,6 +84,29 @@ const LedgerEntrySchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Middleware to maintain bidirectional compatibility
+LedgerEntrySchema.pre('save', function (next) {
+  if (this.debit && !this.debitAmount) {
+    this.debitAmount = this.debit;
+  } else if (this.debitAmount && !this.debit) {
+    this.debit = this.debitAmount;
+  }
+
+  if (this.credit && !this.creditAmount) {
+    this.creditAmount = this.credit;
+  } else if (this.creditAmount && !this.credit) {
+    this.credit = this.creditAmount;
+  }
+
+  if (this.entryDate && !this.transactionDate) {
+    this.transactionDate = this.entryDate;
+  } else if (this.transactionDate && !this.entryDate) {
+    this.entryDate = this.transactionDate;
+  }
+
+  next();
+});
 
 const LedgerEntry = mongoose.models.LedgerEntry || mongoose.model('LedgerEntry', LedgerEntrySchema);
 

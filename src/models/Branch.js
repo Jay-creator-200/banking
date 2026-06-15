@@ -40,6 +40,11 @@ const BranchSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
   },
+  currentBusinessDate: {
+    type: Date,
+    required: true,
+    default: () => new Date('2026-06-15'),
+  },
 });
 
 BranchSchema.plugin(baseSchemaPlugin);

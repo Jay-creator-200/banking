@@ -60,6 +60,16 @@ const navigationGroups = [
     ]
   },
   {
+    title: 'Advanced Accounting',
+    items: [
+      { label: 'Analytics Dashboard', href: '/dashboard/reports-charts', icon: BarChart3 },
+      { label: 'Financial Statements', href: ROUTES.DASHBOARD.REPORTS, icon: FileSpreadsheet },
+      { label: 'Closing Operations', href: ROUTES.DASHBOARD.CLOSING, icon: ShieldCheck },
+      { label: 'Bank & Cash Reconcile', href: ROUTES.DASHBOARD.RECONCILIATION, icon: RotateCcw },
+      { label: 'Budget & Expenses', href: ROUTES.DASHBOARD.BUDGET_EXPENSES, icon: Coins },
+    ]
+  },
+  {
     title: 'Access Control',
     items: [
       { label: 'Employees', href: ROUTES.DASHBOARD.USERS, icon: Users },

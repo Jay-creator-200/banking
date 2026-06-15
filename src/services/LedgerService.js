@@ -31,6 +31,18 @@ export class LedgerService extends BaseService {
       // Validate schema (includes double-entry check)
       const validatedData = this.validate(createVoucherSchema, data);
 
+      // Enforce Business Date Lock
+      const Branch = mongoose.model('Branch');
+      const branchDoc = await Branch.findById(validatedData.branchId).session(internalSession);
+      if (branchDoc && branchDoc.currentBusinessDate) {
+        const vDate = new Date(validatedData.voucherDate || new Date());
+        const vDateOnly = new Date(vDate.getFullYear(), vDate.getMonth(), vDate.getDate());
+        const bDateOnly = new Date(branchDoc.currentBusinessDate.getFullYear(), branchDoc.currentBusinessDate.getMonth(), branchDoc.currentBusinessDate.getDate());
+        if (vDateOnly < bDateOnly) {
+          throw AppError.validation(`Cannot post transactions for a closed or locked business date (${vDateOnly.toLocaleDateString()}). Current active business date is ${bDateOnly.toLocaleDateString()}.`);
+        }
+      }
+
       // Generate voucher number atomically
       const voucherNo = await sequenceService.generateVoucherNo(validatedData.branchId, internalSession);
 
@@ -49,18 +61,62 @@ export class LedgerService extends BaseService {
         { session: internalSession }
       );
 
-      // Insert ledger lines
-      const ledgerLines = validatedData.entries.map((entry) => ({
-        voucherId: voucherDoc._id,
-        accountHeadId: entry.accountHeadId,
-        entryDate: voucherDoc.voucherDate,
-        debit: entry.debit,
-        credit: entry.credit,
-        branchId: voucherDoc.branchId,
-        memberId: entry.memberId || null,
-        narration: entry.narration || voucherDoc.narration,
-        createdBy: userId,
-      }));
+      // Insert ledger lines and calculate running balances
+      const ledgerLines = [];
+      const accountHeads = {};
+      
+      for (const entry of validatedData.entries) {
+        let ah = accountHeads[entry.accountHeadId.toString()];
+        if (!ah) {
+          ah = await mongoose.model('AccountHead').findById(entry.accountHeadId).session(internalSession);
+          if (ah) {
+            accountHeads[entry.accountHeadId.toString()] = ah;
+          }
+        }
+        const type = ah ? ah.type : 'ASSET';
+        
+        // Find latest ledger entry (including in-memory postings within this voucher)
+        const sameHeadInLoop = ledgerLines.filter(line => line.accountHeadId.toString() === entry.accountHeadId.toString());
+        let previousBalance = 0;
+        if (sameHeadInLoop.length > 0) {
+          previousBalance = sameHeadInLoop[sameHeadInLoop.length - 1].balanceAfterTransaction;
+        } else {
+          const lastEntry = await ledgerEntryRepository.model.findOne({
+            accountHeadId: entry.accountHeadId,
+            branchId: voucherDoc.branchId
+          })
+          .sort({ entryDate: -1, createdAt: -1 })
+          .session(internalSession);
+          previousBalance = lastEntry ? lastEntry.balanceAfterTransaction : 0;
+        }
+
+        const isAssetOrExpense = ['ASSET', 'EXPENSE'].includes(type);
+        const debitAmt = entry.debit || 0;
+        const creditAmt = entry.credit || 0;
+        
+        let balanceAfterTransaction = previousBalance;
+        if (isAssetOrExpense) {
+          balanceAfterTransaction = previousBalance + debitAmt - creditAmt;
+        } else {
+          balanceAfterTransaction = previousBalance + creditAmt - debitAmt;
+        }
+
+        ledgerLines.push({
+          voucherId: voucherDoc._id,
+          accountHeadId: entry.accountHeadId,
+          entryDate: voucherDoc.voucherDate,
+          debit: debitAmt,
+          credit: creditAmt,
+          debitAmount: debitAmt,
+          creditAmount: creditAmt,
+          balanceAfterTransaction,
+          transactionDate: voucherDoc.voucherDate,
+          branchId: voucherDoc.branchId,
+          memberId: entry.memberId || null,
+          narration: entry.narration || voucherDoc.narration,
+          createdBy: userId,
+        });
+      }
 
       await ledgerEntryRepository.model.insertMany(ledgerLines, { session: internalSession });
 

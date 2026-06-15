@@ -82,6 +82,9 @@ export class ApprovalService extends BaseService {
       } else if (approval.moduleName === 'LOAN_WRITEOFF') {
         const { LoanWriteoffServiceInstance } = await import('./LoanWriteoffService.js');
         await LoanWriteoffServiceInstance.executeWriteoff(approval.referenceId, userId, session);
+      } else if (approval.moduleName === 'EXPENSE') {
+        const { ExpenseServiceInstance } = await import('./ExpenseService.js');
+        await ExpenseServiceInstance.approveExpense(approval.referenceId, userId, session);
       }
 
       await session.commitTransaction();
@@ -139,6 +142,11 @@ export class ApprovalService extends BaseService {
         const LoanWriteoff = mongoose.model('LoanWriteoff');
         await LoanWriteoff.findByIdAndUpdate(approval.referenceId, {
           $set: { writeoffStatus: 'rejected', updatedBy: userId },
+        }).session(session);
+      } else if (approval.moduleName === 'EXPENSE') {
+        const Expense = mongoose.model('Expense');
+        await Expense.findByIdAndUpdate(approval.referenceId, {
+          $set: { approvalStatus: 'REJECTED', updatedBy: userId },
         }).session(session);
       }
 

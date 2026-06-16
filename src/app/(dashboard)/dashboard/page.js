@@ -392,7 +392,7 @@ export default function DashboardHome() {
                 <Coins className="w-6 h-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Today's Inflow</p>
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Today&apos;s Inflow</p>
                 <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
                   {statsLoading ? '...' : formatCurrency(stats?.todayCollection)}
                 </h4>
@@ -410,7 +410,7 @@ export default function DashboardHome() {
                 <ArrowRightLeft className="w-6 h-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Today's Outflow</p>
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Today&apos;s Outflow</p>
                 <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
                   {statsLoading ? '...' : formatCurrency(stats?.todayWithdrawal)}
                 </h4>

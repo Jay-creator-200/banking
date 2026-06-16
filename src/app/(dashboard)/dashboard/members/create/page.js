@@ -51,9 +51,13 @@ export default function CreateMemberPage() {
     signatureUrl: 'https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg',
     remarks: '',
     autoChargeFee: true,
+    memberNoType: 'auto',
+    manualMemberNo: '',
   });
 
-  // Fetch branches
+  const [nextAutoCode, setNextAutoCode] = useState('');
+
+  // Fetch branches and next member code
   useEffect(() => {
     async function loadBranches() {
       try {
@@ -69,7 +73,19 @@ export default function CreateMemberPage() {
         console.error('Failed to load branches:', e);
       }
     }
+    async function fetchNextCode() {
+      try {
+        const res = await fetch('/api/members/next-code');
+        if (res.ok) {
+          const json = await res.json();
+          setNextAutoCode(json.data?.nextCode || '');
+        }
+      } catch (e) {
+        console.error('Failed to fetch next member code:', e);
+      }
+    }
     loadBranches();
+    fetchNextCode();
   }, []);
 
   const handleChange = (e) => {
@@ -143,7 +159,7 @@ export default function CreateMemberPage() {
         </button>
         <PageHeader
           title="Register New Member"
-          subtitle="Add a new member profile to Noble Cooperative Bank. Fields with * are mandatory."
+          subtitle="Add a new member profile to Noble Cooperative Society. Fields with * are mandatory."
           breadcrumbs={[
             { label: 'Platform Core', href: '/dashboard' },
             { label: 'Members', href: '/dashboard/members' },
@@ -205,7 +221,7 @@ export default function CreateMemberPage() {
               >
                 <option value="general">General</option>
                 <option value="senior_citizen">Senior Citizen</option>
-                <option value="staff">Bank Staff</option>
+                <option value="staff">Society Staff</option>
                 <option value="farmer">Farmer</option>
                 <option value="business">Business Professional</option>
               </select>
@@ -225,6 +241,58 @@ export default function CreateMemberPage() {
                 </span>
               </label>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100 dark:border-slate-850">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                Member Code Generation *
+              </label>
+              <div className="flex items-center gap-6 mt-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-slate-700 dark:text-slate-300">
+                  <input
+                    type="radio"
+                    name="memberNoType"
+                    value="auto"
+                    checked={formData.memberNoType === 'auto'}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                  />
+                  <span>Auto-generate ({nextAutoCode ? nextAutoCode : 'Loading...'})</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-slate-700 dark:text-slate-300">
+                  <input
+                    type="radio"
+                    name="memberNoType"
+                    value="manual"
+                    checked={formData.memberNoType === 'manual'}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                  />
+                  <span>Manual Entry</span>
+                </label>
+              </div>
+            </div>
+
+            {formData.memberNoType === 'manual' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                  Numeric Suffix *
+                </label>
+                <input
+                  type="text"
+                  name="manualMemberNo"
+                  value={formData.manualMemberNo}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. 345 (will become NCS-0345)"
+                  className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all font-mono"
+                />
+                {fieldErrors.manualMemberNo && (
+                  <p className="mt-1 text-xs text-rose-600">{fieldErrors.manualMemberNo}</p>
+                )}
+              </div>
+            )}
           </div>
         </CardWrapper>
 

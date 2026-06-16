@@ -24,6 +24,21 @@ export async function GET(req) {
 
     const matchBranch = branchId ? { branchId: new mongoose.Types.ObjectId(branchId) } : {};
 
+    // Calculate total members, active savings account counts, and current branch name
+    const totalMembers = await mongoose.model('Member').countDocuments(
+      branchId ? { branchId: new mongoose.Types.ObjectId(branchId), memberStatus: 'active' } : { memberStatus: 'active' }
+    );
+    const activeSavings = await SavingsAccount.countDocuments(
+      branchId ? { branchId: new mongoose.Types.ObjectId(branchId), status: 'active' } : { status: 'active' }
+    );
+    let branchName = 'Noble Cooperative Society';
+    if (branchId) {
+      const branch = await mongoose.model('Branch').findById(branchId);
+      if (branch) {
+        branchName = branch.branchName;
+      }
+    }
+
     // 1. Today's Collections & Withdrawals (using cash account heads 11001/11002)
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -221,6 +236,9 @@ export async function GET(req) {
         interestExpense: Math.round(interestExpense * 100) / 100,
         netProfit: Math.round(netProfit * 100) / 100,
         cashPosition: Math.round(cashPosition * 100) / 100,
+        totalMembers,
+        activeSavings,
+        branchName,
       },
       charts: {
         labels: months,

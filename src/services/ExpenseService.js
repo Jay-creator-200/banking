@@ -38,17 +38,26 @@ export class ExpenseService {
         { session }
       );
 
-      // Trigger approval request
-      await ApprovalService.createApproval(
-        {
-          moduleName: 'EXPENSE',
-          referenceCollection: 'Expense',
-          referenceId: expense[0]._id,
-          requestType: 'CREATE',
-        },
-        userId,
-        session
-      );
+      const User = mongoose.model('User');
+      const creator = await User.findById(userId).populate('roleId').session(session);
+      const isSuperAdmin = creator?.roleId?.code === 'SUPER_ADMIN';
+
+      if (isSuperAdmin) {
+        // Direct auto-approval bypass for Super Admin
+        await this.approveExpense(expense[0]._id, userId, session);
+      } else {
+        // Trigger approval request
+        await ApprovalService.createApproval(
+          {
+            moduleName: 'EXPENSE',
+            referenceCollection: 'Expense',
+            referenceId: expense[0]._id,
+            requestType: 'CREATE',
+          },
+          userId,
+          session
+        );
+      }
 
       await session.commitTransaction();
       session.endSession();

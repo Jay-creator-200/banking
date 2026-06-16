@@ -52,7 +52,11 @@ export class ApprovalService extends BaseService {
       if (approval.status !== 'PENDING') {
         throw AppError.validation(`Approval request is already ${approval.status}`);
       }
-      if (approval.requestedBy.toString() === userId.toString()) {
+      const User = mongoose.model('User');
+      const approverUser = await User.findById(userId).populate('roleId').session(session);
+      const isSuperAdmin = approverUser?.roleId?.code === 'SUPER_ADMIN';
+
+      if (approval.requestedBy.toString() === userId.toString() && !isSuperAdmin) {
         throw AppError.validation('Maker cannot act as Checker. Self-approval is disabled.');
       }
 
@@ -119,7 +123,11 @@ export class ApprovalService extends BaseService {
       if (approval.status !== 'PENDING') {
         throw AppError.validation(`Approval request is already ${approval.status}`);
       }
-      if (approval.requestedBy.toString() === userId.toString()) {
+      const User = mongoose.model('User');
+      const rejecterUser = await User.findById(userId).populate('roleId').session(session);
+      const isSuperAdmin = rejecterUser?.roleId?.code === 'SUPER_ADMIN';
+
+      if (approval.requestedBy.toString() === userId.toString() && !isSuperAdmin) {
         throw AppError.validation('Self-rejection/action is not permitted.');
       }
 

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Noble Cooperative Bank",
-  description: "Enterprise-grade core administration platform for co-operative banking societies, credit unions, and microfinance organizations.",
+  title: "Noble Cooperative Society",
+  description: "Enterprise-grade core administration platform for co-operative societies, credit unions, and microfinance organizations.",
 };
 
 export default function RootLayout({ children }) {

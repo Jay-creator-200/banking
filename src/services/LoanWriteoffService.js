@@ -46,16 +46,25 @@ export class LoanWriteoffService extends BaseService {
         updatedBy: userId,
       }, { session });
 
-      // Create approval request
-      const approval = await approvalService.createApproval({
-        moduleName: 'LOAN_WRITEOFF',
-        referenceCollection: 'LoanWriteoff',
-        referenceId: writeoff._id.toString(),
-        requestType: 'CREATE',
-      }, userId, session);
+      const User = mongoose.model('User');
+      const creator = await User.findById(userId).populate('roleId').session(session);
+      const isSuperAdmin = creator?.roleId?.code === 'SUPER_ADMIN';
 
-      writeoff.approvalRequestId = approval._id;
-      await writeoff.save({ session });
+      if (isSuperAdmin) {
+        // Direct auto-approval bypass
+        await this.executeWriteoff(writeoff._id, userId, session);
+      } else {
+        // Create approval request
+        const approval = await approvalService.createApproval({
+          moduleName: 'LOAN_WRITEOFF',
+          referenceCollection: 'LoanWriteoff',
+          referenceId: writeoff._id.toString(),
+          requestType: 'CREATE',
+        }, userId, session);
+
+        writeoff.approvalRequestId = approval._id;
+        await writeoff.save({ session });
+      }
 
       await auditLogService.log({
         userId,
@@ -79,7 +88,7 @@ export class LoanWriteoffService extends BaseService {
    * Called by ApprovalService after write-off is approved.
    */
   async executeWriteoff(writeoffId, userId, session = null) {
-    const writeoff = await loanWriteoffRepository.findById(writeoffId);
+    const writeoff = await loanWriteoffRepository.model.findById(writeoffId).session(session);
     if (!writeoff) throw AppError.notFound('Write-off record not found');
 
     const { LoanAccountServiceInstance } = await import('./LoanAccountService.js');

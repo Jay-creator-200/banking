@@ -21,7 +21,7 @@ export default function AuthLayout({ children }) {
             N
           </div>
           <span className="font-bold text-white text-lg tracking-wide">
-            Noble Cooperative Bank
+            Noble Cooperative Society
           </span>
         </div>
 
@@ -31,13 +31,13 @@ export default function AuthLayout({ children }) {
             Empowering Cooperative Growth, Securing Community Wealth.
           </h1>
           <p className="text-sm text-slate-400 leading-relaxed font-medium">
-            An enterprise-grade Core Cooperative Banking platform designed with robust multi-branch capabilities, double-entry ledgers, and transaction routing.
+            An enterprise-grade Core Cooperative Society platform designed with robust multi-branch capabilities, double-entry ledgers, and transaction routing.
           </p>
         </div>
 
         {/* Bottom Metadata */}
         <div className="relative z-10 text-[10px] text-slate-500 font-bold tracking-wider uppercase">
-          Noble Banking Solutions • Core System Platform
+          Noble Society Solutions • Core System Platform
         </div>
       </div>
 
@@ -50,10 +50,10 @@ export default function AuthLayout({ children }) {
               N
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Noble Cooperative Bank
+              Noble Cooperative Society
             </h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-1">
-              Core Core Banking Solution
+              Core Cooperative Society Solution
             </p>
           </div>
 

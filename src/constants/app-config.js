@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  NAME: 'Noble Cooperative Bank',
+  NAME: 'Noble Cooperative Society',
   VERSION: '0.1.0',
   CURRENCY: {
     CODE: 'INR',
@@ -11,6 +11,13 @@ export const APP_CONFIG = {
   SYSTEM_TZ: 'Asia/Kolkata',
   AUDIT_USER_HEADER: 'x-audit-user-id',
   AUDIT_BRANCH_HEADER: 'x-audit-branch-id',
+  organizationSettings: {
+    organizationName: "Noble Cooperative Society",
+    shortName: "NCS",
+    city: "Udaipur",
+    state: "Rajasthan",
+    country: "India"
+  }
 };
 
 export default APP_CONFIG;

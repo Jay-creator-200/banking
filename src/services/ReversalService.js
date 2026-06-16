@@ -58,22 +58,33 @@ export class ReversalService extends BaseService {
         { session }
       );
 
-      // Create Approval workflow record
-      await approvalService.createApproval(
-        {
-          moduleName: 'REVERSAL',
-          referenceCollection: 'TransactionReversal',
-          referenceId: reversalDoc._id,
-          requestType: 'REVERSAL',
-        },
-        userId,
-        session
-      );
+      const User = mongoose.model('User');
+      const requester = await User.findById(userId).populate('roleId').session(session);
+      const isSuperAdmin = requester?.roleId?.code === 'SUPER_ADMIN';
+
+      if (isSuperAdmin) {
+        // Direct reversal auto-approval bypass
+        await this.approveReversal(reversalDoc._id, userId, session);
+      } else {
+        // Create Approval workflow record
+        await approvalService.createApproval(
+          {
+            moduleName: 'REVERSAL',
+            referenceCollection: 'TransactionReversal',
+            referenceId: reversalDoc._id,
+            requestType: 'REVERSAL',
+          },
+          userId,
+          session
+        );
+      }
 
       await session.commitTransaction();
       session.endSession();
 
-      return reversalDoc;
+      // Return the updated document from the database (refetched after posting changes)
+      const finalReversal = await this.repository.model.findById(reversalDoc._id);
+      return finalReversal || reversalDoc;
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
@@ -93,7 +104,7 @@ export class ReversalService extends BaseService {
    */
   async approveReversal(reversalId, userId, session) {
     try {
-      const reversal = await this.repository.findById(reversalId);
+      const reversal = await this.repository.model.findById(reversalId).session(session);
       if (!reversal) {
         throw AppError.notFound('Reversal request not found');
       }
@@ -101,7 +112,7 @@ export class ReversalService extends BaseService {
         throw AppError.validation('Reversal request is already processed');
       }
 
-      const transaction = await transactionRepository.findById(reversal.transactionId);
+      const transaction = await transactionRepository.model.findById(reversal.transactionId).session(session);
       if (!transaction) {
         throw AppError.notFound('Original transaction not found');
       }
@@ -484,7 +495,7 @@ export class ReversalService extends BaseService {
    */
   async rejectReversal(reversalId, userId, remarks, session) {
     try {
-      const reversal = await this.repository.findById(reversalId);
+      const reversal = await this.repository.model.findById(reversalId).session(session);
       if (!reversal) {
         throw AppError.notFound('Reversal request not found');
       }

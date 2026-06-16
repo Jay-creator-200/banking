@@ -44,6 +44,8 @@ export const createMemberSchema = z.object({
   photoUrl: z.string().trim().optional().nullable(),
   signatureUrl: z.string().trim().optional().nullable(),
   remarks: z.string().trim().optional().nullable(),
+  memberNoType: z.enum(['auto', 'manual']).optional().default('auto'),
+  manualMemberNo: z.string().trim().optional().nullable(),
 });
 
 export const updateMemberSchema = createMemberSchema.partial().omit({ branchId: true });

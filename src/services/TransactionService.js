@@ -19,11 +19,15 @@ export class TransactionService extends BaseService {
    *
    * @param {Object} data - Transaction details payload
    * @param {string} userId - Requesting operator user ID
+   * @param {import('mongoose').ClientSession} [externalSession=null] - External DB session
    * @returns {Promise<import('mongoose').Document>} PENDING Transaction record
    */
-  async createTransaction(data, userId) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  async createTransaction(data, userId, externalSession = null) {
+    const session = externalSession || (await mongoose.startSession());
+    const isLocalSession = !externalSession;
+    if (isLocalSession) {
+      session.startTransaction();
+    }
     try {
       // Validate schema
       const validatedData = this.validate(createTransactionSchema, data);
@@ -70,25 +74,42 @@ export class TransactionService extends BaseService {
         { session }
       );
 
-      // Queue an approval request
-      await approvalService.createApproval(
-        {
-          moduleName: 'TRANSACTION',
-          referenceCollection: 'Transaction',
-          referenceId: transaction._id,
-          requestType: 'CREATE',
-        },
-        userId,
-        session
-      );
+      const User = mongoose.model('User');
+      const creator = await User.findById(userId).populate('roleId').session(session);
+      const isSuperAdmin = creator?.roleId?.code === 'SUPER_ADMIN';
 
-      await session.commitTransaction();
-      session.endSession();
+      if (isSuperAdmin) {
+        // Direct auto-posting bypass for Super Admin
+        await this.approveTransaction(transaction._id, userId, session);
+      } else {
+        // Queue an approval request
+        await approvalService.createApproval(
+          {
+            moduleName: 'TRANSACTION',
+            referenceCollection: 'Transaction',
+            referenceId: transaction._id,
+            requestType: 'CREATE',
+          },
+          userId,
+          session
+        );
+      }
 
-      return transaction;
+      // Return the updated document from the database (refetched after posting changes)
+      const finalTransaction = await this.repository.model.findById(transaction._id).session(session);
+
+      if (isLocalSession) {
+        await session.commitTransaction();
+        session.endSession();
+      }
+
+      return finalTransaction || transaction;
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
+      console.error("RAW TRANSACTION SERVICE ERROR:", error);
+      if (isLocalSession) {
+        await session.abortTransaction();
+        session.endSession();
+      }
       this.handleError(error, 'Failed to create transaction request');
     }
   }
@@ -103,7 +124,7 @@ export class TransactionService extends BaseService {
    */
   async approveTransaction(txnId, userId, session) {
     try {
-      const transaction = await this.repository.findById(txnId);
+      const transaction = await this.repository.model.findById(txnId).session(session);
       if (!transaction) {
         throw AppError.notFound('Transaction not found');
       }
@@ -295,7 +316,7 @@ export class TransactionService extends BaseService {
    */
   async rejectTransaction(txnId, userId, remarks, session) {
     try {
-      const transaction = await this.repository.findById(txnId);
+      const transaction = await this.repository.model.findById(txnId).session(session);
       if (!transaction) {
         throw AppError.notFound('Transaction not found');
       }

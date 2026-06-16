@@ -27,20 +27,20 @@ export class MemberService extends BaseService {
       const { autoChargeFee, ...memberData } = data;
 
       // Validate Zod schema
-      const validated = this.validate(createMemberSchema, memberData);
+      const { memberNoType, manualMemberNo, ...validatedFields } = this.validate(createMemberSchema, memberData);
 
       // Duplicate detection
       const duplicateQuery = {
         $or: [
-          { mobile: validated.mobile },
-          { aadhaarNumber: validated.aadhaarNumber },
+          { mobile: validatedFields.mobile },
+          { aadhaarNumber: validatedFields.aadhaarNumber },
         ],
       };
-      if (validated.email) {
-        duplicateQuery.$or.push({ email: validated.email });
+      if (validatedFields.email) {
+        duplicateQuery.$or.push({ email: validatedFields.email });
       }
-      if (validated.panNumber) {
-        duplicateQuery.$or.push({ panNumber: validated.panNumber });
+      if (validatedFields.panNumber) {
+        duplicateQuery.$or.push({ panNumber: validatedFields.panNumber });
       }
 
       const duplicate = await this.repository.findOne(duplicateQuery);
@@ -48,13 +48,50 @@ export class MemberService extends BaseService {
         throw AppError.conflict('A member with matching mobile, email, PAN, or Aadhaar already exists.');
       }
 
-      // Generate member number atomically
-      const memberNo = await sequenceService.generateSequence('MBR', validated.branchId, session);
+      // Generate member number
+      let memberNo;
+      if (memberNoType === 'manual') {
+        if (!manualMemberNo) {
+          throw AppError.validation('Manual member number is required when manual code generation is selected.');
+        }
+        const isNumeric = /^\d+$/.test(manualMemberNo);
+        if (!isNumeric) {
+          throw AppError.validation('Manual member number must contain digits only.');
+        }
+        const parsedNum = parseInt(manualMemberNo, 10);
+        if (parsedNum <= 0) {
+          throw AppError.validation('Manual member number must be a positive integer.');
+        }
+        const paddedSuffix = String(parsedNum).padStart(4, '0');
+        memberNo = `NCS-${paddedSuffix}`;
+
+        // Verify uniqueness
+        const existingNo = await this.repository.findOne({ memberNo });
+        if (existingNo) {
+          throw AppError.conflict(`Member number ${memberNo} already exists.`);
+        }
+      } else {
+        // Auto-generate: scan existing members matching regex /^NCS-\d+$/
+        const allMatchingMembers = await this.repository.model.find({
+          memberNo: /^NCS-\d+$/
+        }).session(session);
+        
+        let maxNum = 0;
+        for (const m of allMatchingMembers) {
+          const suffix = m.memberNo.split('-')[1];
+          const num = parseInt(suffix, 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+        const nextNum = maxNum + 1;
+        memberNo = `NCS-${String(nextNum).padStart(4, '0')}`;
+      }
 
       // Create member profile
       const member = await this.repository.create(
         {
-          ...validated,
+          ...validatedFields,
           memberNo,
           kycStatus: 'pending',
           memberStatus: 'active',
@@ -69,8 +106,8 @@ export class MemberService extends BaseService {
       await SavingsAccountServiceInstance.openAccount(
         {
           memberId: member._id.toString(),
-          branchId: validated.branchId.toString(),
-          accountType: validated.memberCategory === 'senior_citizen' ? 'senior_citizen' : (validated.memberCategory === 'staff' ? 'staff' : 'regular'),
+          branchId: validatedFields.branchId.toString(),
+          accountType: validatedFields.memberCategory === 'senior_citizen' ? 'senior_citizen' : (validatedFields.memberCategory === 'staff' ? 'staff' : 'regular'),
           openingDeposit: 0,
         },
         userId,
@@ -166,7 +203,8 @@ export class MemberService extends BaseService {
         amount: 100, // Standard membership registration fee
         narration: `Automated registration membership fee for ${member.fullName} (${member.memberNo})`,
       },
-      userId
+      userId,
+      session
     );
   }
 

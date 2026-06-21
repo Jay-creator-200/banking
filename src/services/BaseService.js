@@ -24,7 +24,27 @@ export class BaseService {
    * @throws {AppError} Formatted validation error if safeParse fails.
    */
   validate(schema, data) {
-    const result = schema.safeParse(data);
+    const isPlainObject = (val) => {
+      if (typeof val !== 'object' || val === null) return false;
+      const proto = Object.getPrototypeOf(val);
+      return proto === null || proto === Object.prototype;
+    };
+    const sanitize = (obj) => {
+      if (obj === null || obj === undefined) return obj;
+      if (Array.isArray(obj)) {
+        return obj.map(sanitize);
+      }
+      if (isPlainObject(obj)) {
+        const cleaned = {};
+        for (const [key, val] of Object.entries(obj)) {
+          cleaned[key] = val === '' ? undefined : sanitize(val);
+        }
+        return cleaned;
+      }
+      return obj;
+    };
+    const cleanedData = sanitize(data);
+    const result = schema.safeParse(cleanedData);
     if (!result.success) {
       // Format validation errors to a structured key-value format
       const formattedErrors = result.error.flatten().fieldErrors;

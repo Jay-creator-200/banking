@@ -147,41 +147,50 @@ export function Sidebar({ isOpen, setIsOpen }) {
       group.items.some(item => pathname === item.href)
     );
     if (activeGroup) {
-      setExpandedGroups(prev => ({
-        ...prev,
-        [activeGroup.title]: true
-      }));
+      setExpandedGroups(prev => {
+        const next = {};
+        Object.keys(prev).forEach(key => {
+          next[key] = false;
+        });
+        next[activeGroup.title] = true;
+        return next;
+      });
     }
   }, [pathname]);
 
   const toggleGroup = (title) => {
-    setExpandedGroups(prev => ({
-      ...prev,
-      [title]: !prev[title]
-    }));
+    setExpandedGroups(prev => {
+      const isOpening = !prev[title];
+      const next = {};
+      Object.keys(prev).forEach(key => {
+        next[key] = false;
+      });
+      next[title] = isOpening;
+      return next;
+    });
   };
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-slate-200/90 dark:border-slate-800/80 bg-slate-900 text-slate-400 flex flex-col lg:translate-x-0 ${
+      className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-slate-200/90 bg-white text-slate-600 flex flex-col lg:translate-x-0 ${
         isOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 lg:w-20'
       }`}
     >
       {/* Brand logo */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/80 shrink-0">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
         <div className="flex items-center gap-2.5 overflow-hidden">
           <div className="w-8 h-8 rounded-lg bg-indigo-650 flex items-center justify-center shrink-0 text-white font-bold text-base shadow-sm shadow-indigo-550">
             N
           </div>
           {isOpen && (
-            <span className="font-bold text-white text-sm whitespace-nowrap tracking-wide animate-in fade-in duration-200">
+            <span className="font-bold text-slate-850 text-sm whitespace-nowrap tracking-wide animate-in fade-in duration-200">
               {APP_CONFIG.NAME.split(' ')[0]} Society
             </span>
           )}
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all shrink-0 cursor-pointer"
+          className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 transition-all shrink-0 cursor-pointer"
         >
           <ChevronLeft
             className={`w-4 h-4 transition-transform duration-300 ${
@@ -192,22 +201,22 @@ export function Sidebar({ isOpen, setIsOpen }) {
       </div>
 
       {/* Navigation list */}
-      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+      <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
         {navigationGroups.map((group, groupIdx) => {
           const GroupIcon = group.icon;
           const isGroupExpanded = !!expandedGroups[group.title];
           const hasActiveChild = group.items.some(item => pathname === item.href);
 
           return (
-            <div key={`group-${groupIdx}`} className="space-y-1.5">
+            <div key={`group-${groupIdx}`} className="space-y-0.5">
               {isOpen ? (
                 // Collapsible group header when sidebar is open
                 <button
                   onClick={() => toggleGroup(group.title)}
                   className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs font-bold uppercase tracking-wider rounded-xl transition-all duration-150 cursor-pointer ${
                     hasActiveChild 
-                      ? 'text-indigo-400 bg-slate-800/40' 
-                      : 'text-slate-500 hover:text-slate-350 hover:bg-slate-850/50'
+                      ? 'text-indigo-650 bg-indigo-50/50' 
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -215,14 +224,14 @@ export function Sidebar({ isOpen, setIsOpen }) {
                     <span>{group.title}</span>
                   </div>
                   <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform duration-200 text-slate-500 ${
+                    className={`w-3.5 h-3.5 transition-transform duration-200 text-slate-400 ${
                       isGroupExpanded ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
               ) : (
                 // Divider line if sidebar is closed
-                <div className="border-t border-slate-850 my-2" />
+                <div className="border-t border-slate-100 my-2" />
               )}
 
               {/* Sub-menu items container */}
@@ -231,9 +240,9 @@ export function Sidebar({ isOpen, setIsOpen }) {
                   !isOpen 
                     ? 'opacity-100 max-h-none' 
                     : isGroupExpanded 
-                      ? 'max-h-[350px] opacity-100 mt-1 pl-3' 
+                      ? 'max-h-[350px] opacity-100 mt-0.5 pl-3' 
                       : 'max-h-0 opacity-0 pointer-events-none'
-                } space-y-1`}
+                } space-y-0.5`}
               >
                 {group.items.map((item) => {
                   const isActive = pathname === item.href;
@@ -245,8 +254,8 @@ export function Sidebar({ isOpen, setIsOpen }) {
                       href={item.href}
                       className={`flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all duration-150 relative group ${
                         isActive
-                          ? 'bg-indigo-650 text-white shadow-md shadow-indigo-650/20'
-                          : 'hover:bg-slate-800 hover:text-white'
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10'
+                          : 'hover:bg-slate-50 hover:text-slate-900 text-slate-600'
                       }`}
                       onClick={() => {
                         if (window.innerWidth < 1024) {
@@ -258,7 +267,7 @@ export function Sidebar({ isOpen, setIsOpen }) {
                       {isOpen ? (
                         <span className="truncate">{item.label}</span>
                       ) : (
-                        <span className="absolute left-16 bg-slate-950 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 shadow-xl whitespace-nowrap z-50">
+                        <span className="absolute left-16 bg-slate-900 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 shadow-xl whitespace-nowrap z-50">
                           {item.label}
                         </span>
                       )}
@@ -272,7 +281,7 @@ export function Sidebar({ isOpen, setIsOpen }) {
       </nav>
 
       {/* Sidebar Footer info */}
-      <div className="p-4 border-t border-slate-800/80 text-[10px] text-slate-500 font-bold tracking-wider text-center shrink-0">
+      <div className="p-4 border-t border-slate-100 text-[10px] text-slate-400 font-bold tracking-wider text-center shrink-0">
         {isOpen ? `v${APP_CONFIG.VERSION}` : 'v0.1'}
       </div>
     </aside>

@@ -6,6 +6,9 @@ import { ArrowLeft, Search, CheckCircle2, AlertTriangle } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader.jsx';
 import CardWrapper from '@/components/shared/CardWrapper.jsx';
 
+const inputCls = 'w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20';
+const Field = ({ label, children }) => (<div><label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">{label}</label>{children}</div>);
+
 export default function DisbursementPage() {
   const router = useRouter();
   const [approvedApps, setApprovedApps] = useState([]);
@@ -54,10 +57,6 @@ export default function DisbursementPage() {
     } catch { setError('Network error'); }
     finally { setSubmitting(false); }
   };
-
-  const inputCls = 'w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20';
-  const Field = ({ label, children }) => (<div><label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">{label}</label>{children}</div>);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

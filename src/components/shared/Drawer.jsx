@@ -37,20 +37,28 @@ export function Drawer({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true">
+    <div
+      className={`fixed inset-0 z-50 overflow-hidden transition-all duration-300 ${
+        isOpen ? 'visible pointer-events-auto' : 'invisible pointer-events-none'
+      }`}
+      role="dialog"
+      aria-modal="true"
+    >
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-[3px] transition-opacity duration-300 animate-in fade-in"
+        className={`fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-[3px] transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
       />
 
       {/* Slide-out block wrapper */}
       <div className="absolute inset-y-0 right-0 pl-10 max-w-full flex">
         <div
-          className={`w-screen max-w-md bg-white dark:bg-slate-950 border-l border-slate-200/90 dark:border-slate-800/80 shadow-2xl flex flex-col animate-in slide-in-from-right duration-350 ease-out ${className}`}
+          className={`w-screen max-w-md bg-white dark:bg-slate-950 border-l border-slate-200/90 dark:border-slate-800/80 shadow-2xl flex flex-col transition-transform duration-300 ease-out transform ${
+            isOpen ? 'translate-x-0' : 'translate-x-full'
+          } ${className}`}
         >
           <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight">

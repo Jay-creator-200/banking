@@ -54,6 +54,7 @@ export const paginationSchema = z.object({
 
 // Primary ObjectId Schema (Validates Mongoose format, pre-processing ObjectId instances into hex strings)
 export const objectIdSchema = z.preprocess((val) => {
+  if (val === '') return undefined;
   if (val && typeof val === 'object' && typeof val.toString === 'function') {
     return val.toString();
   }

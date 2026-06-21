@@ -6,6 +6,14 @@ import { ArrowLeft, User, Building2, FileText, AlertTriangle, CheckCircle2 } fro
 import PageHeader from '@/components/shared/PageHeader.jsx';
 import CardWrapper from '@/components/shared/CardWrapper.jsx';
 
+const inputCls = 'w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20';
+const Field = ({ label, children, span }) => (
+  <div className={span ? `col-span-${span}` : ''}>
+    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">{label}</label>
+    {children}
+  </div>
+);
+
 export default function NewLoanApplicationPage() {
   const router = useRouter();
 
@@ -90,15 +98,6 @@ export default function NewLoanApplicationPage() {
     } catch { setError('Network error'); }
     finally { setSubmitting(false); }
   };
-
-  const inputCls = 'w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20';
-  const Field = ({ label, children, span }) => (
-    <div className={span ? `col-span-${span}` : ''}>
-      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">{label}</label>
-      {children}
-    </div>
-  );
-
   // EMI Preview
   let emiPreview = null;
   if (selectedProduct && form.requestedAmount && form.requestedTenureMonths) {

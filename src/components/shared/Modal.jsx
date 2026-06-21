@@ -40,8 +40,6 @@ export function Modal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   const sizePresets = {
     sm: 'max-w-md',
     md: 'max-w-lg',
@@ -52,16 +50,24 @@ export function Modal({
   const selectedSize = sizePresets[size] || sizePresets.md;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
+        isOpen ? 'visible pointer-events-auto' : 'invisible pointer-events-none'
+      }`}
+    >
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-[3px] transition-opacity duration-300 animate-in fade-in"
+        className={`fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-[3px] transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
       />
 
       {/* Modal Card content */}
       <div
-        className={`relative w-full ${selectedSize} bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl overflow-hidden z-10 transition-all duration-300 animate-in zoom-in-95 ease-out duration-200 ${className}`}
+        className={`relative w-full ${selectedSize} bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl overflow-hidden z-10 transition-all duration-300 ease-out transform ${
+          isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
+        } ${className}`}
         role="dialog"
         aria-modal="true"
       >

@@ -18,6 +18,15 @@ const EMPTY_FORM = {
   requiresGuarantor: false, requiresCollateral: false, approvalLevels: 1,
 };
 
+const inputCls = 'w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20';
+
+const Field = ({ label, children }) => (
+  <div>
+    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">{label}</label>
+    {children}
+  </div>
+);
+
 export default function LoanProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState([]);
@@ -89,15 +98,6 @@ export default function LoanProductsPage() {
       ),
     },
   ];
-
-  const Field = ({ label, children }) => (
-    <div>
-      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">{label}</label>
-      {children}
-    </div>
-  );
-
-  const inputCls = 'w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/20';
 
   return (
     <div className="space-y-6">

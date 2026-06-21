@@ -27,24 +27,17 @@ export default function MemberLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [theme, setTheme] = useState('light');
 
-  // Load theme from localStorage on mount
+  // Load theme from localStorage on mount - Forced to light
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
-    if (savedTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    }
+    setTheme('light');
+    localStorage.setItem('theme', 'light');
+    document.documentElement.classList.remove('dark');
   }, []);
 
   const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    if (nextTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    setTheme('light');
+    localStorage.setItem('theme', 'light');
+    document.documentElement.classList.remove('dark');
   };
 
   if (status === 'loading') {

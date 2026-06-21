@@ -163,8 +163,8 @@ export function Sidebar({ isOpen, setIsOpen }) {
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-slate-200/90 dark:border-slate-800/80 bg-slate-900 text-slate-400 flex flex-col ${
-        isOpen ? 'w-64' : 'w-20'
+      className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 border-r border-slate-200/90 dark:border-slate-800/80 bg-slate-900 text-slate-400 flex flex-col lg:translate-x-0 ${
+        isOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 lg:w-20'
       }`}
     >
       {/* Brand logo */}
@@ -231,7 +231,7 @@ export function Sidebar({ isOpen, setIsOpen }) {
                   !isOpen 
                     ? 'opacity-100 max-h-none' 
                     : isGroupExpanded 
-                      ? 'max-h-[350px] opacity-100 mt-1' 
+                      ? 'max-h-[350px] opacity-100 mt-1 pl-3' 
                       : 'max-h-0 opacity-0 pointer-events-none'
                 } space-y-1`}
               >
@@ -246,8 +246,13 @@ export function Sidebar({ isOpen, setIsOpen }) {
                       className={`flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all duration-150 relative group ${
                         isActive
                           ? 'bg-indigo-650 text-white shadow-md shadow-indigo-650/20'
-                          : 'hover:bg-slate-800 hover:text-white pl-5 md:pl-6'
+                          : 'hover:bg-slate-800 hover:text-white'
                       }`}
+                      onClick={() => {
+                        if (window.innerWidth < 1024) {
+                          setIsOpen(false);
+                        }
+                      }}
                     >
                       <ItemIcon className="w-4 h-4 shrink-0" />
                       {isOpen ? (

@@ -452,10 +452,10 @@ export default function DashboardHome() {
         {showSandbox && (
           <div className="mt-4 border border-slate-200 dark:border-slate-850 rounded-2xl bg-white dark:bg-slate-950 overflow-hidden shadow-sm animate-in slide-in-from-top-4 duration-300">
             {/* Navigation Tabs */}
-            <div className="flex border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
+            <div className="flex border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 overflow-x-auto whitespace-nowrap scrollbar-none">
               <button
                 onClick={() => setActiveTab('components')}
-                className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
                   activeTab === 'components'
                     ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-500'
                     : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
@@ -465,7 +465,7 @@ export default function DashboardHome() {
               </button>
               <button
                 onClick={() => setActiveTab('validation')}
-                className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
                   activeTab === 'validation'
                     ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-500'
                     : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
@@ -475,7 +475,7 @@ export default function DashboardHome() {
               </button>
               <button
                 onClick={() => setActiveTab('storage')}
-                className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
                   activeTab === 'storage'
                     ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-500'
                     : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'

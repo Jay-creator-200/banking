@@ -19,6 +19,11 @@ export default function DashboardLayout({ children }) {
     if (savedTheme === 'dark') {
       document.documentElement.classList.add('dark');
     }
+
+    // Auto-collapse sidebar on mobile viewports
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
   }, []);
 
   const handleThemeChange = (newTheme) => {
@@ -27,15 +32,23 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200 flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200 flex relative">
+      {/* Translucent backdrop overlay for mobile viewports */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity duration-300 cursor-pointer"
+        />
+      )}
+
       {/* Collapsible Sidebar */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Inner panel containing Header and dynamic page contents */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          sidebarOpen ? 'pl-64' : 'pl-20'
-        }`}
+          sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'
+        } pl-0`}
       >
         <Header
           sidebarOpen={sidebarOpen}

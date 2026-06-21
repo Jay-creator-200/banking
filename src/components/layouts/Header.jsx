@@ -41,9 +41,9 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between w-full h-16 px-6 bg-white dark:bg-slate-950 border-b border-slate-200/90 dark:border-slate-800/80 transition-colors duration-200">
+    <header className="sticky top-0 z-30 flex items-center justify-between w-full h-16 px-3 sm:px-6 bg-white dark:bg-slate-950 border-b border-slate-200/90 dark:border-slate-800/80 transition-colors duration-200">
       {/* Left side actions: hamburger + branch scopes */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="p-1.5 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all cursor-pointer"
@@ -52,12 +52,12 @@ export function Header({
         </button>
 
         {/* Branch Scope Selector (Critical parameter for auditing & access rules) */}
-        <div className="flex items-center gap-2 border border-slate-200/80 dark:border-slate-800/80 rounded-xl px-3 py-1.5 bg-slate-50/50 dark:bg-slate-900/40 text-slate-700 dark:text-slate-350 shadow-sm">
+        <div className="flex items-center gap-1 sm:gap-2 border border-slate-200/80 dark:border-slate-800/80 rounded-xl px-2 py-1 sm:px-3 sm:py-1.5 bg-slate-50/50 dark:bg-slate-900/40 text-slate-700 dark:text-slate-350 shadow-sm max-w-[140px] sm:max-w-none">
           <Landmark className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
           <select
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
-            className="bg-transparent text-xs font-semibold focus:outline-none pr-1.5 cursor-pointer border-none text-slate-850 dark:text-slate-200"
+            className="bg-transparent text-[11px] sm:text-xs font-semibold focus:outline-none pr-1.5 cursor-pointer border-none text-slate-850 dark:text-slate-200 max-w-[80px] xs:max-w-[120px] sm:max-w-none truncate"
           >
             {branches.map((b) => (
               <option
@@ -73,7 +73,7 @@ export function Header({
       </div>
 
       {/* Right side operations: theme, notifications & user profiles */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-4">
         {/* Toggle dark themes */}
         <button
           onClick={toggleTheme}
@@ -90,7 +90,7 @@ export function Header({
           </button>
         </div>
 
-        <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 shrink-0" />
+        <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-800 shrink-0" />
 
         {/* User Account actions */}
         <UserProfileDropdown />

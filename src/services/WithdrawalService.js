@@ -26,13 +26,14 @@ export class WithdrawalService extends BaseService {
       throw AppError.notFound('Savings account not found');
     }
 
-    if (account.status === 'closed') {
+    const statusLower = account.status?.toLowerCase();
+    if (statusLower === 'closed') {
       throw AppError.validation('Cannot withdraw from a closed account.');
     }
-    if (account.status === 'frozen') {
+    if (statusLower === 'frozen') {
       throw AppError.validation(`Cannot withdraw from a frozen account. (Reason: ${account.freezeReason || 'Compliance Hold'})`);
     }
-    if (account.status === 'dormant') {
+    if (statusLower === 'dormant') {
       const remarks = validatedData.remarks || '';
       if (!remarks.toLowerCase().includes('reactivate')) {
         throw AppError.validation('Cannot withdraw from a dormant account. Please reactivate the account first, or write "Reactivate and withdraw" in the remarks to automatically lift dormancy.');

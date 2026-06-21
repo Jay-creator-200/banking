@@ -27,6 +27,7 @@ export default function SavingsWithdrawalPage() {
   const [accountNoQuery, setAccountNoQuery] = useState('');
   const [account, setAccount] = useState(null);
   const [searchingAccount, setSearchingAccount] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -37,10 +38,11 @@ export default function SavingsWithdrawalPage() {
   });
 
   const handleSearchAccount = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!accountNoQuery.trim()) return;
 
     setSearchingAccount(true);
+    setSearchResults([]);
     setAccount(null);
     setSubmitError(null);
 
@@ -51,24 +53,46 @@ export default function SavingsWithdrawalPage() {
         throw new Error(json.error?.message || 'Failed to search account');
       }
       
-      const found = json.data?.find(acc => acc.accountNo.toUpperCase() === accountNoQuery.trim().toUpperCase());
-      if (!found) {
-        throw new Error(`No account found with number "${accountNoQuery.toUpperCase()}"`);
+      const docs = json.data || [];
+      setSearchResults(docs);
+      
+      // If exactly 1 valid account is found, auto-select it
+      if (docs.length === 1) {
+        const found = docs[0];
+        const statusLower = found.status?.toLowerCase();
+        if (statusLower === 'closed') {
+          throw new Error(`Account "${found.accountNo}" is CLOSED. Withdrawals are disabled.`);
+        }
+        if (statusLower === 'frozen') {
+          throw new Error(`Account "${found.accountNo}" is FROZEN (Reason: ${found.freezeReason || 'Compliance Hold'}). Withdrawals are disabled.`);
+        }
+        setAccount(found);
+        setFormData(prev => ({ ...prev, accountId: found._id }));
+        setSearchResults([]);
+      } else if (docs.length === 0) {
+        throw new Error(`No account found matching "${accountNoQuery}"`);
       }
-      if (found.status === 'closed') {
-        throw new Error(`Account "${found.accountNo}" is CLOSED. Withdrawals are disabled.`);
-      }
-      if (found.status === 'frozen') {
-        throw new Error(`Account "${found.accountNo}" is FROZEN (Reason: ${found.freezeReason || 'Compliance Hold'}). Withdrawals are disabled.`);
-      }
-
-      setAccount(found);
-      setFormData(prev => ({ ...prev, accountId: found._id }));
     } catch (e) {
       setSubmitError(e.message);
     } finally {
       setSearchingAccount(false);
     }
+  };
+
+  const handleSelectAccount = (acc) => {
+    const statusLower = acc.status?.toLowerCase();
+    if (statusLower === 'closed') {
+      setSubmitError(`Account "${acc.accountNo}" is CLOSED. Withdrawals are disabled.`);
+      return;
+    }
+    if (statusLower === 'frozen') {
+      setSubmitError(`Account "${acc.accountNo}" is FROZEN (Reason: ${acc.freezeReason || 'Compliance Hold'}). Withdrawals are disabled.`);
+      return;
+    }
+    setAccount(acc);
+    setFormData(prev => ({ ...prev, accountId: acc._id }));
+    setSearchResults([]);
+    setSubmitError(null);
   };
 
   const handleChange = (e) => {
@@ -177,26 +201,61 @@ export default function SavingsWithdrawalPage() {
         </div>
 
         {!account ? (
-          <form onSubmit={handleSearchAccount} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="md:col-span-3">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Account Number * (e.g. SAV-2026-000001)</label>
-              <input
-                type="text"
-                value={accountNoQuery}
-                onChange={e => setAccountNoQuery(e.target.value)}
-                placeholder="Enter SAV account number..."
-                required
-                className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all font-mono"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={searchingAccount}
-              className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm"
-            >
-              {searchingAccount ? 'Searching...' : 'Search Account'}
-            </button>
-          </form>
+          <div className="space-y-4">
+            <form onSubmit={handleSearchAccount} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <div className="md:col-span-3">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Search by Account No, Member Name, or Mobile *</label>
+                <input
+                  type="text"
+                  value={accountNoQuery}
+                  onChange={e => setAccountNoQuery(e.target.value)}
+                  placeholder="Type name, mobile number, or SAV account number..."
+                  required
+                  className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all font-mono"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={searchingAccount}
+                className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm"
+              >
+                {searchingAccount ? 'Searching...' : 'Search Account'}
+              </button>
+            </form>
+
+            {searchResults.length > 0 && (
+              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-950 divide-y divide-slate-100 dark:divide-slate-900 shadow-sm max-h-60 overflow-y-auto">
+                <p className="p-3 text-[10px] font-bold text-slate-450 uppercase bg-slate-50/50 dark:bg-slate-900/30">Select Matching Account</p>
+                {searchResults.map((acc) => (
+                  <button
+                    key={acc._id}
+                    type="button"
+                    onClick={() => handleSelectAccount(acc)}
+                    className="w-full text-left p-3.5 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/10 flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{acc.accountNo} ({acc.accountType?.toUpperCase()})</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Member: <span className="font-semibold text-slate-700 dark:text-slate-350">{acc.memberId?.fullName}</span> • Mobile: {acc.memberId?.mobile || '—'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-indigo-600 font-mono">₹{acc.currentBalance?.toLocaleString('en-IN')}</p>
+                      <span className={`inline-block text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md mt-1 ${
+                        acc.status?.toLowerCase() === 'active' 
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450' 
+                          : acc.status?.toLowerCase() === 'dormant'
+                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-450'
+                            : 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-450'
+                      }`}>
+                        {acc.status}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -220,7 +279,7 @@ export default function SavingsWithdrawalPage() {
       </CardWrapper>
 
       {/* Account status alerts */}
-      {account && account.status === 'dormant' && (
+      {account && account.status?.toLowerCase() === 'dormant' && (
         <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-2xl text-amber-700 dark:text-amber-450 text-sm">
           <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 animate-pulse" />
           <div>

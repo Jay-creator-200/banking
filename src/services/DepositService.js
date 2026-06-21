@@ -25,7 +25,7 @@ export class DepositService extends BaseService {
     if (!account) {
       throw AppError.notFound('Savings account not found');
     }
-    if (account.status !== 'active') {
+    if (account.status.toLowerCase() !== 'active') {
       throw AppError.validation(`Account is not active (current status: ${account.status}). Deposits are only allowed on active accounts.`);
     }
 

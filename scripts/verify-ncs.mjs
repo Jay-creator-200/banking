@@ -28,15 +28,15 @@ async function verify() {
     console.log("-----------------------------------------------\n");
 
     // --- Pre-cleanup of any previous runs ---
-    const m1 = await Member.findOne({ mobile: '9999999991' });
-    if (m1) {
+    const m1s = await Member.find({ $or: [{ mobile: '9999999991' }, { memberNo: 'NCS-0003' }, { fullName: 'Test Auto Member' }] });
+    for (const m1 of m1s) {
       const txns = await Transaction.find({ memberId: m1._id });
       const txnIds = txns.map(t => t._id);
       await LedgerEntry.deleteMany({ transactionId: { $in: txnIds } });
       await Transaction.deleteMany({ memberId: m1._id });
       await SavingsAccount.deleteMany({ memberId: m1._id });
       await Member.deleteOne({ _id: m1._id });
-      console.log('🧹 Cleaned up old Test Case 1 member, accounts, and transactions.');
+      console.log(`🧹 Cleaned up old Test Case 1 member (${m1.memberNo}), accounts, and transactions.`);
     }
     const m2 = await Member.findOne({ mobile: '9999999992' });
     if (m2) {

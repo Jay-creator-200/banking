@@ -1,15 +1,15 @@
 import mongoose from 'mongoose';
 
 // Fix querySrv ECONNREFUSED on local systems by fallback to public DNS resolvers
+let dnsPromise = null;
 if (typeof window === 'undefined' && process.env.NEXT_RUNTIME !== 'edge') {
-  try {
-    if (typeof module !== 'undefined' && typeof module.require === 'function') {
-      const dns = module.require('dns');
-      dns.setServers(['8.8.8.8', '1.1.1.1']);
-    }
-  } catch (e) {
-    console.warn('Could not set custom DNS servers for MongoDB resolution:', e);
-  }
+  dnsPromise = import('dns')
+    .then((dnsModule) => {
+      dnsModule.setServers(['8.8.8.8', '1.1.1.1']);
+    })
+    .catch((e) => {
+      console.warn('Could not set custom DNS servers for MongoDB resolution:', e);
+    });
 }
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -38,6 +38,10 @@ if (!cached) {
 export async function dbConnect() {
   if (cached.conn) {
     return cached.conn;
+  }
+
+  if (dnsPromise) {
+    await dnsPromise;
   }
 
   if (!cached.promise) {

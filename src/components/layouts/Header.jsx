@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Menu, Bell, Sun, Moon, Landmark } from 'lucide-react';
 import UserProfileDropdown from './UserProfileDropdown.jsx';
+import PwaInstallButton from '@/components/shared/PwaInstallButton.jsx';
 
 /**
  * Premium dashboard Header panel.
@@ -74,6 +75,8 @@ export function Header({
 
       {/* Right side operations: theme, notifications & user profiles */}
       <div className="flex items-center gap-1.5 sm:gap-4">
+        <PwaInstallButton />
+
         {/* Toggle dark themes */}
         <button
           onClick={toggleTheme}

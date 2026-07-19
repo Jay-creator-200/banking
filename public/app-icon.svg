@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Noble Cooperative Society</title>
+  <desc id="desc">A desktop app icon for Noble Cooperative Society.</desc>
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <rect x="48" y="48" width="416" height="416" rx="92" fill="#4f46e5"/>
+  <path d="M256 100 114 178v28h284v-28L256 100Z" fill="#f8fafc"/>
+  <path d="M142 232h42v120h-42V232Zm93 0h42v120h-42V232Zm93 0h42v120h-42V232Z" fill="#f8fafc"/>
+  <path d="M112 376h288v42H112v-42Z" fill="#f8fafc"/>
+  <path d="M154 183h204L256 128 154 183Z" fill="#10b981"/>
+  <circle cx="256" cy="185" r="23" fill="#0f172a"/>
+  <path d="M247 178h28v12h-17v9h-11v-21Z" fill="#f8fafc"/>
+</svg>

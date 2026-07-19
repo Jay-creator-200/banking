@@ -92,7 +92,7 @@ export const addCollateralSchema = z.object({
 export const disburseLoanSchema = z.object({
   applicationId: objectIdSchema,
   disbursementDate: z.string().optional().nullable(),
-  disbursementMode: z.enum(['CASH', 'TRANSFER', 'ACCOUNT_CREDIT']),
+  disbursementMode: z.enum(['CASH', 'TRANSFER', 'ACCOUNT_CREDIT', 'RTGS', 'ONLINE']),
   sessionId: objectIdSchema.optional().nullable(), // Required for CASH mode
   remarks: z.string().trim().max(500).optional().nullable(),
 });
@@ -102,7 +102,7 @@ export const disburseLoanSchema = z.object({
 export const recordPaymentSchema = z.object({
   loanId: objectIdSchema,
   amount: z.number().positive('Payment amount must be positive'),
-  paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI']),
+  paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI', 'RTGS', 'ONLINE']),
   paymentDate: z.string().optional().nullable(),
   sessionId: objectIdSchema.optional().nullable(),
   savingsAccountNo: z.string().trim().optional().nullable(), // required when paymentMode is TRANSFER
@@ -113,7 +113,7 @@ export const recordPaymentSchema = z.object({
 
 export const foreclosureSchema = z.object({
   loanId: objectIdSchema,
-  paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI']),
+  paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI', 'RTGS', 'ONLINE']),
   sessionId: objectIdSchema.optional().nullable(),
   savingsAccountNo: z.string().trim().optional().nullable(), // required when paymentMode is TRANSFER
   remarks: z.string().trim().max(500).optional().nullable(),

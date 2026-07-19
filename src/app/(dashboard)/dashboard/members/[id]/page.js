@@ -35,6 +35,31 @@ import PageHeader from '@/components/shared/PageHeader.jsx';
 import StatusBadge from '@/components/shared/StatusBadge.jsx';
 import LoadingSpinner from '@/components/shared/LoadingSpinner.jsx';
 
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const hasBirthdayPassed =
+    today.getMonth() > dob.getMonth() ||
+    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+
+  if (!hasBirthdayPassed) age -= 1;
+  return age;
+}
+
+function formatMemberCategory(category) {
+  const labels = {
+    general: 'General',
+    obc: 'OBC',
+    sc: 'SC',
+    st: 'ST',
+  };
+  return labels[category] || 'General';
+}
+
 export default function MemberDetailPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -118,6 +143,13 @@ export default function MemberDetailPage() {
       if (branchRes.ok) {
         const json = await branchRes.json();
         setBranches(json.data || []);
+      }
+
+      // 3. Fetch documents early so the hero can show a passport photo if uploaded.
+      const docsRes = await fetch(`/api/member-documents?memberId=${id}`);
+      if (docsRes.ok) {
+        const json = await docsRes.json();
+        setDocuments(json.data || []);
       }
     } catch (e) {
       console.error(e);
@@ -495,6 +527,17 @@ export default function MemberDetailPage() {
     );
   }
 
+  const memberAge = calculateAge(member.dateOfBirth);
+  const uploadedPhoto = documents
+    .filter((doc) => doc.documentType === 'photo' && doc.cloudinaryUrl)
+    .sort((a, b) => {
+      const statusWeight = (doc) => (doc.verificationStatus === 'verified' ? 1 : 0);
+      const statusDiff = statusWeight(b) - statusWeight(a);
+      if (statusDiff !== 0) return statusDiff;
+      return new Date(b.uploadedAt || b.createdAt || 0) - new Date(a.uploadedAt || a.createdAt || 0);
+    })[0];
+  const profilePhotoUrl = uploadedPhoto?.cloudinaryUrl || member.photoUrl;
+
   return (
     <div className="space-y-6">
       {/* Top action header bar */}
@@ -527,9 +570,18 @@ export default function MemberDetailPage() {
       <CardWrapper className="p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4.5">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-bold text-xl uppercase shadow-inner border border-indigo-100 dark:border-indigo-900/20">
-              {member.fullName.charAt(0)}
-            </div>
+            {profilePhotoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profilePhotoUrl}
+                alt={`${member.fullName} passport photo`}
+                className="w-14 h-14 rounded-2xl object-cover shadow-inner border border-indigo-100 dark:border-indigo-900/20 bg-slate-100"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-bold text-xl uppercase shadow-inner border border-indigo-100 dark:border-indigo-900/20">
+                {member.fullName.charAt(0)}
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{member.fullName}</h2>
@@ -538,7 +590,8 @@ export default function MemberDetailPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-450 dark:text-slate-500 font-mono mt-1">
-                Category: <span className="font-bold text-slate-750 dark:text-slate-350">{member.memberCategory?.toUpperCase()}</span> • 
+                Age: <span className="font-bold text-slate-750 dark:text-slate-350">{memberAge !== null ? `${memberAge} years` : 'N/A'}</span> • 
+                Contact: <span className="font-bold">{member.mobile || 'N/A'}</span> • 
                 Registered: <span className="font-bold">{new Date(member.membershipDate || member.createdAt).toLocaleDateString()}</span>
               </p>
             </div>
@@ -641,6 +694,10 @@ export default function MemberDetailPage() {
                 <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{new Date(member.dateOfBirth).toLocaleDateString()}</span>
               </div>
               <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Age</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{memberAge !== null ? `${memberAge} years` : 'N/A'}</span>
+              </div>
+              <div>
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Gender</span>
                 <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{member.gender}</span>
               </div>
@@ -667,6 +724,31 @@ export default function MemberDetailPage() {
               <div>
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Home Branch</span>
                 <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{member.branchId?.branchName || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Member Category</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{formatMemberCategory(member.memberCategory)}</span>
+              </div>
+              <div className="md:col-span-3 pb-3 border-b border-slate-100 dark:border-slate-800/60"></div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Other Bank</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{member.otherBankName || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Bank Branch</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{member.otherBankBranch || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Other Account No</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">{member.otherBankAccountNumber || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">IFSC Code</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">{member.otherBankIfscCode || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">UPI ID</span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">{member.upiId || 'N/A'}</span>
               </div>
               <div className="md:col-span-3 pb-3 border-b border-slate-100 dark:border-slate-800/60"></div>
               <div>
@@ -775,6 +857,65 @@ export default function MemberDetailPage() {
                     type="number"
                     value={editFormData.annualIncome || 0}
                     onChange={(e) => setEditFormData({ ...editFormData, annualIncome: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 text-slate-750 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Member Category</label>
+                  <select
+                    value={editFormData.memberCategory || 'general'}
+                    onChange={(e) => setEditFormData({ ...editFormData, memberCategory: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 text-slate-750"
+                  >
+                    <option value="general">General</option>
+                    <option value="obc">OBC</option>
+                    <option value="sc">SC</option>
+                    <option value="st">ST</option>
+                  </select>
+                </div>
+                <div className="md:col-span-3 pb-3 border-b border-slate-100 dark:border-slate-800/60"></div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Other Bank Name</label>
+                  <input
+                    type="text"
+                    value={editFormData.otherBankName || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, otherBankName: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 text-slate-750"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Other Bank Branch</label>
+                  <input
+                    type="text"
+                    value={editFormData.otherBankBranch || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, otherBankBranch: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 text-slate-750"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Other Account Number</label>
+                  <input
+                    type="text"
+                    value={editFormData.otherBankAccountNumber || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, otherBankAccountNumber: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 text-slate-750 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">IFSC Code</label>
+                  <input
+                    type="text"
+                    value={editFormData.otherBankIfscCode || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, otherBankIfscCode: e.target.value.toUpperCase() })}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 text-slate-750 font-mono uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">UPI ID</label>
+                  <input
+                    type="text"
+                    value={editFormData.upiId || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, upiId: e.target.value })}
                     className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 text-slate-750 font-mono"
                   />
                 </div>
@@ -1693,6 +1834,9 @@ export default function MemberDetailPage() {
                   <option value="CASH">Cash Book</option>
                   <option value="TRANSFER">Bank Transfer</option>
                   <option value="CHEQUE">Clearing Cheque</option>
+                  <option value="UPI">UPI</option>
+                  <option value="RTGS">RTGS</option>
+                  <option value="ONLINE">Online</option>
                 </select>
               </div>
 
@@ -1826,7 +1970,7 @@ export default function MemberDetailPage() {
               <CardWrapper className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <PiggyBank className="w-4 h-4 text-amber-500" /> Monthly Income Scheme ({deposits.mis.length})
+                    <PiggyBank className="w-4 h-4 text-amber-500" /> Monthly Investment Scheme ({deposits.mis.length})
                   </h3>
                   <button onClick={() => router.push('/dashboard/deposits/mis')} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-xl hover:bg-amber-100 transition-all">
                     <Plus className="w-3.5 h-3.5" /> Open MIS
@@ -1841,7 +1985,7 @@ export default function MemberDetailPage() {
                         <div>
                           <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">{acct.misAccountNo}</span>
                           <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">{acct.status}</span>
-                          <p className="text-[10px] text-slate-500 mt-0.5">Principal: ₹{(acct.principalAmount || 0).toLocaleString()} • Monthly Income: ₹{(acct.monthlyInterestAmount || 0).toLocaleString()}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Principal: ₹{(acct.principalAmount || 0).toLocaleString()} • Monthly Investment: ₹{(acct.monthlyInterestAmount || 0).toLocaleString()}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-extrabold text-amber-600">₹{(acct.monthlyInterestAmount || 0).toLocaleString()}/mo</p>

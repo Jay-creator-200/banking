@@ -29,7 +29,8 @@ import {
   Coins,
   BarChart3,
   LibraryBig,
-  MessageSquare
+  MessageSquare,
+  ReceiptText
 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes.js';
 import { APP_CONFIG } from '@/constants/app-config.js';
@@ -60,7 +61,7 @@ const navigationGroups = [
       { label: 'Recurring Deposits (RD)', href: ROUTES.DASHBOARD.DEPOSIT_RD, icon: CalendarClock },
       { label: 'Fixed Deposits (FD)', href: ROUTES.DASHBOARD.DEPOSIT_FD, icon: TrendingUp },
       { label: 'Daily Deposits (DDS)', href: ROUTES.DASHBOARD.DEPOSIT_DDS, icon: Coins },
-      { label: 'Monthly Income (MIS)', href: ROUTES.DASHBOARD.DEPOSIT_MIS, icon: PiggyBank },
+      { label: 'Monthly Investment (MIS)', href: ROUTES.DASHBOARD.DEPOSIT_MIS, icon: PiggyBank },
       { label: 'Deposit Schemes', href: ROUTES.DASHBOARD.DEPOSIT_SCHEMES, icon: LibraryBig },
     ]
   },
@@ -92,6 +93,7 @@ const navigationGroups = [
       { label: 'Chart of Accounts', href: ROUTES.DASHBOARD.ACCOUNT_HEADS, icon: FolderTree },
       { label: 'Transactions Ledger', href: ROUTES.DASHBOARD.TRANSACTIONS, icon: Briefcase },
       { label: 'Journal Vouchers', href: ROUTES.DASHBOARD.JOURNAL_VOUCHERS, icon: FileText },
+      { label: 'Opening Balances', href: ROUTES.DASHBOARD.OPENING_BALANCES, icon: Landmark },
       { label: 'General Ledger', href: ROUTES.DASHBOARD.LEDGER, icon: History },
       { label: 'Accounting Reports', href: ROUTES.DASHBOARD.REPORTS, icon: FileSpreadsheet },
     ]
@@ -118,8 +120,10 @@ const navigationGroups = [
     icon: Settings,
     items: [
       { label: 'Users & Staff', href: ROUTES.DASHBOARD.USERS, icon: Users },
+      { label: 'Staff Salary', href: ROUTES.DASHBOARD.STAFF_SALARY, icon: Coins },
       { label: 'Roles & Authority', href: ROUTES.DASHBOARD.ROLES, icon: Key },
       { label: 'Branch Registry', href: ROUTES.DASHBOARD.BRANCHES, icon: Building2 },
+      { label: 'Receipt Layout', href: ROUTES.DASHBOARD.RECEIPT_SETTINGS, icon: ReceiptText },
       { label: 'Organization Settings', href: ROUTES.DASHBOARD.SETTINGS, icon: Settings },
       { label: 'Login Audits', href: ROUTES.DASHBOARD.LOGIN_LOGS, icon: ShieldAlert },
       { label: 'Audit Trail', href: ROUTES.DASHBOARD.AUDIT, icon: History },

@@ -36,7 +36,7 @@ export const createTransactionSchema = z.object({
     'MIS_PAYOUT',
     'MIS_PAYOUT_TRANSFER',
   ]),
-  paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI']),
+  paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI', 'RTGS', 'ONLINE']),
   amount: z.number().positive({ message: 'Amount must be greater than zero' }),
   referenceNo: z.string().trim().max(100).optional().nullable(),
   narration: z.string().trim().max(500).optional().nullable(),

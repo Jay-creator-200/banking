@@ -19,8 +19,11 @@ export function PageHeader({
   subtitle,
   breadcrumbs = [],
   action = null,
+  children = null,
   className = '',
 }) {
+  const headerAction = action || children;
+
   return (
     <div
       className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800/60 mb-6 ${className}`}
@@ -60,9 +63,9 @@ export function PageHeader({
         )}
       </div>
 
-      {action && (
+      {headerAction && (
         <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
-          {action}
+          {headerAction}
         </div>
       )}
     </div>

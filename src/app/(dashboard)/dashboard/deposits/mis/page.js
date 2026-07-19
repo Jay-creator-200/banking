@@ -111,7 +111,7 @@ export default function MISAccountsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Monthly Income Scheme Accounts"
+        title="Monthly Investment Scheme Accounts"
         subtitle="Book MIS accounts, process monthly interest payouts to savings accounts"
         icon={PiggyBank}
         action={
@@ -125,7 +125,7 @@ export default function MISAccountsPage() {
       {showForm && (
         <CardWrapper className="p-6 space-y-5 border-l-4 border-amber-500">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <PiggyBank className="w-4 h-4 text-amber-500" /> Open Monthly Income Scheme
+            <PiggyBank className="w-4 h-4 text-amber-500" /> Open Monthly Investment Scheme
           </h3>
           {formError && <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2"><AlertTriangle className="w-4 h-4 shrink-0" />{formError}</div>}
           <form onSubmit={handleOpenAccount} className="space-y-4">
@@ -153,6 +153,10 @@ export default function MISAccountsPage() {
                 <select className={InputClass} value={form.fundingSource} onChange={e => setForm({ ...form, fundingSource: e.target.value })}>
                   <option value="CASH">Cash</option>
                   <option value="TRANSFER">Savings Transfer</option>
+                  <option value="CHEQUE">Cheque</option>
+                  <option value="UPI">UPI</option>
+                  <option value="RTGS">RTGS</option>
+                  <option value="ONLINE">Online</option>
                 </select></div>
               <div><label className={LabelClass}>Start Date</label>
                 <input type="date" className={InputClass} value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} /></div>
@@ -215,7 +219,7 @@ export default function MISAccountsPage() {
                   <div className="flex items-center gap-6">
                     <div className="text-right hidden md:block">
                       <p className="text-sm font-extrabold text-amber-600">{formatCurrency(acct.monthlyInterestAmount)}</p>
-                      <p className="text-[10px] text-slate-400">Monthly Income</p>
+                      <p className="text-[10px] text-slate-400">Monthly Investment</p>
                     </div>
                     <div className="text-right hidden md:block">
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{formatDate(acct.nextPayoutDate)}</p>

@@ -113,9 +113,9 @@ async function runTests() {
     }
 
     // Load branch
-    const branch = await Branch.findOne({ branchCode: 'JPR' });
+    const branch = await Branch.findOne({ branchCode: 'NCS-JP-001' });
     if (!branch) {
-      throw new Error('Jaipur Branch (JPR) not found. Run seeds first.');
+      throw new Error('Jaipur Branch (NCS-JP-001) not found. Run seeds first.');
     }
     const branchId = branch._id.toString();
 

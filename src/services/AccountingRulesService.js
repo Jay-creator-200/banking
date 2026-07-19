@@ -100,18 +100,18 @@ export class AccountingRulesService {
       },
       MIS_DEPOSIT: {
         debitCode: '11001', // Cash In Hand
-        creditCode: '21005', // Monthly Income Scheme Liability
+        creditCode: '21005', // Monthly Investment Scheme Liability
       },
       MIS_DEPOSIT_TRANSFER: {
         debitCode: '21001', // Savings Deposit Liability
-        creditCode: '21005', // Monthly Income Scheme Liability
+        creditCode: '21005', // Monthly Investment Scheme Liability
       },
       MIS_WITHDRAWAL: {
-        debitCode: '21005', // Monthly Income Scheme Liability
+        debitCode: '21005', // Monthly Investment Scheme Liability
         creditCode: '11001', // Cash In Hand
       },
       MIS_WITHDRAWAL_TRANSFER: {
-        debitCode: '21005', // Monthly Income Scheme Liability
+        debitCode: '21005', // Monthly Investment Scheme Liability
         creditCode: '21001', // Savings Deposit Liability
       },
       MIS_PAYOUT: {

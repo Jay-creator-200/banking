@@ -25,6 +25,11 @@ export const createUserSchema = z.object({
   roleId: objectIdSchema,
   branchId: objectIdSchema,
   profilePhoto: z.string().trim().url({ message: 'Invalid profile photo URL' }).optional().or(z.literal('')),
+  designation: z.string().trim().max(100).optional().or(z.literal('')),
+  department: z.string().trim().max(100).optional().or(z.literal('')),
+  joiningDate: z.string().optional().nullable(),
+  monthlySalary: z.number().nonnegative('Monthly salary cannot be negative').optional().default(0),
+  employmentType: z.enum(['permanent', 'contract', 'probation', 'temporary']).optional().default('permanent'),
   status: z.enum(['ACTIVE', 'INACTIVE', 'LOCKED', 'DRAFT']).default('ACTIVE'),
 });
 
@@ -40,5 +45,10 @@ export const updateUserSchema = z.object({
   roleId: objectIdSchema.optional(),
   branchId: objectIdSchema.optional(),
   profilePhoto: z.string().trim().url({ message: 'Invalid profile photo URL' }).optional().or(z.literal('')),
+  designation: z.string().trim().max(100).optional().or(z.literal('')),
+  department: z.string().trim().max(100).optional().or(z.literal('')),
+  joiningDate: z.string().optional().nullable(),
+  monthlySalary: z.number().nonnegative('Monthly salary cannot be negative').optional(),
+  employmentType: z.enum(['permanent', 'contract', 'probation', 'temporary']).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'LOCKED', 'DRAFT']).optional(),
 });

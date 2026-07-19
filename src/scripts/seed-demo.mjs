@@ -71,7 +71,7 @@ async function seedDemoData() {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected successfully.');
 
-    const BRANCH_CODE = 'JPR';
+    const BRANCH_CODE = 'NCS-JP-001';
     const BRANCH_NAME = 'Jaipur Main Branch';
 
     // 1. Clean up existing Jaipur branch data
@@ -1065,7 +1065,7 @@ async function seedDemoData() {
       },
       {
         schemeCode: 'MIS01',
-        schemeName: 'Monthly Income Scheme',
+        schemeName: 'Monthly Investment Scheme',
         schemeType: 'MIS',
         description: 'Monthly interest payout scheme',
         interestType: 'simple',

@@ -40,7 +40,24 @@ export const createMemberSchema = z.object({
   state: z.string().trim().min(2, 'State is required'),
   district: z.string().trim().min(2, 'District is required'),
   pincode: z.string().trim().regex(/^\d{6}$/, { message: 'Pincode must be exactly 6 digits' }),
-  memberCategory: z.enum(['general', 'senior_citizen', 'staff', 'farmer', 'business']).default('general'),
+  memberCategory: z.enum(['general', 'obc', 'sc', 'st']).default('general'),
+  otherBankName: z.string().trim().optional().nullable(),
+  otherBankBranch: z.string().trim().optional().nullable(),
+  otherBankAccountNumber: z.string().trim().optional().nullable(),
+  otherBankIfscCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, { message: 'Invalid IFSC code format' })
+    .optional()
+    .nullable(),
+  upiId: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9.\-_]{2,256}@[a-z][a-z0-9.\-_]{2,64}$/, { message: 'Invalid UPI ID format' })
+    .optional()
+    .nullable(),
   photoUrl: z.string().trim().optional().nullable(),
   signatureUrl: z.string().trim().optional().nullable(),
   remarks: z.string().trim().optional().nullable(),
@@ -84,7 +101,7 @@ export const purchaseSharesSchema = z.object({
   memberId: objectIdSchema,
   sharesPurchased: z.number().int().positive('Must purchase at least 1 share'),
   shareValue: z.number().positive().default(10),
-  paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE']).default('CASH'),
+  paymentMode: z.enum(['CASH', 'TRANSFER', 'CHEQUE', 'UPI', 'RTGS', 'ONLINE']).default('CASH'),
 });
 
 export default {

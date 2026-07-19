@@ -57,10 +57,11 @@ const coaNodes = [
   { name: 'Recurring Deposit Liability', code: '21002', type: 'LIABILITY', parentCode: '21000' },
   { name: 'Fixed Deposit Liability', code: '21003', type: 'LIABILITY', parentCode: '21000' },
   { name: 'Daily Deposit Liability', code: '21004', type: 'LIABILITY', parentCode: '21000' },
-  { name: 'Monthly Income Scheme Liability', code: '21005', type: 'LIABILITY', parentCode: '21000' },
+  { name: 'Monthly Investment Scheme Liability', code: '21005', type: 'LIABILITY', parentCode: '21000' },
 
   // 4. Equity Subgroups
   { name: 'Share Capital Outstanding', code: '31001', type: 'EQUITY', parentCode: '30000' },
+  { name: 'Opening Balance Equity', code: '31002', type: 'EQUITY', parentCode: '30000' },
 
   // 5. Income Subgroups
   { name: 'Operating Income', code: '41000', type: 'INCOME', parentCode: '40000' },
@@ -72,6 +73,7 @@ const coaNodes = [
   { name: 'Operating Expenses', code: '51000', type: 'EXPENSE', parentCode: '50000' },
   { name: 'Interest Expenses Ledger', code: '51001', type: 'EXPENSE', parentCode: '51000' },
   { name: 'Write-off Expense Ledger', code: '51002', type: 'EXPENSE', parentCode: '51000' },
+  { name: 'Staff Salary Expense', code: '51003', type: 'EXPENSE', parentCode: '51000' },
 ];
 
 async function seed() {

@@ -47,8 +47,13 @@ export default function CreateMemberPage() {
     district: '',
     pincode: '',
     memberCategory: 'general',
-    photoUrl: 'https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg',
-    signatureUrl: 'https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg',
+    otherBankName: '',
+    otherBankBranch: '',
+    otherBankAccountNumber: '',
+    otherBankIfscCode: '',
+    upiId: '',
+    photoUrl: '',
+    signatureUrl: '',
     remarks: '',
     autoChargeFee: true,
     memberNoType: 'auto',
@@ -220,10 +225,9 @@ export default function CreateMemberPage() {
                 className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all"
               >
                 <option value="general">General</option>
-                <option value="senior_citizen">Senior Citizen</option>
-                <option value="staff">Society Staff</option>
-                <option value="farmer">Farmer</option>
-                <option value="business">Business Professional</option>
+                <option value="obc">OBC</option>
+                <option value="sc">SC</option>
+                <option value="st">ST</option>
               </select>
             </div>
 
@@ -237,7 +241,7 @@ export default function CreateMemberPage() {
                   className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
                 />
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Auto-charge Membership Fee (₹100)
+                  Auto-charge Membership Fee (Rs. 10)
                 </span>
               </label>
             </div>
@@ -495,7 +499,93 @@ export default function CreateMemberPage() {
           </div>
         </CardWrapper>
 
-        {/* Section 4: National Identifiers */}
+        {/* Section 4: Other Bank & UPI Details */}
+        <CardWrapper className="p-6 space-y-6">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <CreditCard className="w-5 h-5 text-indigo-650" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Other Bank & UPI Details</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                Bank Name
+              </label>
+              <input
+                type="text"
+                name="otherBankName"
+                value={formData.otherBankName}
+                onChange={handleChange}
+                placeholder="Member's other bank name"
+                className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                Branch Name
+              </label>
+              <input
+                type="text"
+                name="otherBankBranch"
+                value={formData.otherBankBranch}
+                onChange={handleChange}
+                placeholder="External bank branch"
+                className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                Account Number
+              </label>
+              <input
+                type="text"
+                name="otherBankAccountNumber"
+                value={formData.otherBankAccountNumber}
+                onChange={handleChange}
+                placeholder="External bank account number"
+                className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                IFSC Code
+              </label>
+              <input
+                type="text"
+                name="otherBankIfscCode"
+                value={formData.otherBankIfscCode}
+                onChange={handleChange}
+                placeholder="e.g. SBIN0001234"
+                className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all font-mono uppercase"
+              />
+              {fieldErrors.otherBankIfscCode && (
+                <p className="mt-1 text-xs text-rose-600">{fieldErrors.otherBankIfscCode}</p>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                UPI ID
+              </label>
+              <input
+                type="text"
+                name="upiId"
+                value={formData.upiId}
+                onChange={handleChange}
+                placeholder="membername@bank"
+                className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-550/20 focus:border-indigo-600 transition-all font-mono"
+              />
+              {fieldErrors.upiId && (
+                <p className="mt-1 text-xs text-rose-600">{fieldErrors.upiId}</p>
+              )}
+            </div>
+          </div>
+        </CardWrapper>
+
+        {/* Section 5: National Identifiers */}
         <CardWrapper className="p-6 space-y-6">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
             <CreditCard className="w-5 h-5 text-indigo-650" />
@@ -540,7 +630,7 @@ export default function CreateMemberPage() {
           </div>
         </CardWrapper>
 
-        {/* Section 5: Address Details */}
+        {/* Section 6: Address Details */}
         <CardWrapper className="p-6 space-y-6">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
             <MapPin className="w-5 h-5 text-indigo-650" />

@@ -51,7 +51,7 @@ async function seedAdvancedAccounting() {
     console.log('Connection successful.');
 
     // 1. Resolve Branch
-    const branch = await Branch.findOne({ branchCode: 'JPR' });
+    const branch = await Branch.findOne({ branchCode: 'NCS-JP-001' });
     if (!branch) {
       console.error('Jaipur branch not found. Run seed-demo.mjs first.');
       process.exit(1);

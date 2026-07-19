@@ -57,6 +57,27 @@ const UserSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  designation: {
+    type: String,
+    trim: true,
+  },
+  department: {
+    type: String,
+    trim: true,
+  },
+  joiningDate: {
+    type: Date,
+  },
+  monthlySalary: {
+    type: Number,
+    min: [0, 'Monthly salary cannot be negative'],
+    default: 0,
+  },
+  employmentType: {
+    type: String,
+    enum: ['permanent', 'contract', 'probation', 'temporary'],
+    default: 'permanent',
+  },
   lastLoginAt: {
     type: Date,
   },

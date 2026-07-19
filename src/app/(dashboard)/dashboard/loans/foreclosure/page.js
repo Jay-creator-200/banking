@@ -117,6 +117,8 @@ export default function ForeclosurePage() {
               <option value="TRANSFER">Bank Transfer</option>
               <option value="CHEQUE">Cheque</option>
               <option value="UPI">UPI</option>
+              <option value="RTGS">RTGS</option>
+              <option value="ONLINE">Online</option>
             </select>
           </Field>
           {form.paymentMode === 'CASH' && sessions.length > 0 && (

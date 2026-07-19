@@ -12,7 +12,8 @@ import {
   FileText,
   Calendar,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Receipt
 } from 'lucide-react';
 
 import PageHeader from '@/components/shared/PageHeader.jsx';
@@ -285,13 +286,24 @@ export default function TransactionsPage() {
     {
       header: 'Action',
       cell: ({ row }) => (
-        <Link
-          href={`/dashboard/transactions/${row._id}`}
-          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          Details
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/dashboard/transactions/${row._id}`}
+            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Details
+          </Link>
+          {row.status === 'POSTED' && (
+            <Link
+              href={`/dashboard/receipts/transaction/${row._id}`}
+              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              Print
+            </Link>
+          )}
+        </div>
       ),
     },
   ];
@@ -554,6 +566,9 @@ export default function TransactionsPage() {
                   <option value="CASH">Cash</option>
                   <option value="TRANSFER">Transfer</option>
                   <option value="CHEQUE">Cheque</option>
+                  <option value="UPI">UPI</option>
+                  <option value="RTGS">RTGS</option>
+                  <option value="ONLINE">Online</option>
                 </select>
               </div>
             </div>

@@ -9,7 +9,8 @@ import {
   Eye,
   Users,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Upload
 } from 'lucide-react';
 
 import PageHeader from '@/components/shared/PageHeader.jsx';
@@ -35,6 +36,12 @@ export default function MembersPage() {
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [showImport, setShowImport] = useState(false);
+  const [importBranchId, setImportBranchId] = useState('');
+  const [importRows, setImportRows] = useState([]);
+  const [importError, setImportError] = useState('');
+  const [importResult, setImportResult] = useState(null);
+  const [importing, setImporting] = useState(false);
 
   // Fetch branches for dropdown filter
   useEffect(() => {
@@ -44,6 +51,7 @@ export default function MembersPage() {
         if (res.ok) {
           const json = await res.json();
           setBranches(json.data || []);
+          if (json.data?.[0]) setImportBranchId(json.data[0]._id);
         }
       } catch (e) {
         console.error('Failed to load branches:', e);
@@ -97,6 +105,113 @@ export default function MembersPage() {
       { header: 'Date of Birth', accessor: 'dateOfBirth' },
     ];
     exportToCSV(members, cols, 'Noble-Members-Register.csv');
+  };
+
+  const parseCsv = (text) => {
+    const rows = [];
+    let current = '';
+    let row = [];
+    let quoted = false;
+    for (let i = 0; i < text.length; i += 1) {
+      const char = text[i];
+      const next = text[i + 1];
+      if (char === '"' && quoted && next === '"') {
+        current += '"';
+        i += 1;
+      } else if (char === '"') {
+        quoted = !quoted;
+      } else if (char === ',' && !quoted) {
+        row.push(current);
+        current = '';
+      } else if ((char === '\n' || char === '\r') && !quoted) {
+        if (char === '\r' && next === '\n') i += 1;
+        row.push(current);
+        if (row.some((cell) => cell.trim() !== '')) rows.push(row);
+        row = [];
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    row.push(current);
+    if (row.some((cell) => cell.trim() !== '')) rows.push(row);
+    if (rows.length < 2) return [];
+    const headers = rows[0].map((h) => h.trim());
+    return rows.slice(1).map((cells) => Object.fromEntries(headers.map((header, index) => [header, (cells[index] || '').trim()])));
+  };
+
+  const formatImportDetails = (details) => {
+    if (!details) return '';
+    if (typeof details === 'string') return details;
+    return Object.entries(details)
+      .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+      .join('; ');
+  };
+
+  const csvEscape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+  const loadImportText = (text) => {
+    setImportError('');
+    setImportResult(null);
+    try {
+      const trimmed = text.trim();
+      const rows = trimmed.startsWith('[') ? JSON.parse(trimmed) : parseCsv(trimmed);
+      if (!Array.isArray(rows) || rows.length === 0) throw new Error('No rows found. Use CSV with headers or a JSON array.');
+      setImportRows(rows);
+    } catch (error) {
+      setImportRows([]);
+      setImportError(error.message);
+    }
+  };
+
+  const downloadImportSample = () => {
+    const headers = [
+      'fullName', 'fatherName', 'motherName', 'dateOfBirth', 'gender', 'mobile', 'email',
+      'aadhaarNumber', 'panNumber', 'addressLine1', 'city', 'district', 'state', 'pincode',
+      'memberCategory', 'membershipDate', 'memberNo', 'annualIncome',
+    ];
+    const sample = [
+      'Ramesh Kumar', 'Suresh Kumar', 'Kamla Devi', '1985-04-12', 'MALE', '9876543210', 'ramesh@example.com',
+      '123456789012', 'ABCDE1234F', '12 Main Road', 'Udaipur', 'Udaipur', 'Rajasthan', '313001',
+      'general', '2026-07-19', '101', '250000',
+    ];
+    const csv = `${headers.map(csvEscape).join(',')}\n${sample.map(csvEscape).join(',')}`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'member-import-sample.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const submitImport = async () => {
+    setImportError('');
+    setImportResult(null);
+    if (!importBranchId) {
+      setImportError('Select default branch before import.');
+      return;
+    }
+    if (importRows.length === 0) {
+      setImportError('Upload or paste member rows first.');
+      return;
+    }
+    setImporting(true);
+    try {
+      const res = await fetch('/api/members/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ branchId: importBranchId, rows: importRows }),
+      });
+      const json = await res.json();
+      if (!res.ok && !json.data) throw new Error(json.error?.message || 'Import failed');
+      setImportResult(json.data);
+      fetchMembers();
+    } catch (error) {
+      setImportError(error.message);
+    } finally {
+      setImporting(false);
+    }
   };
 
   const columns = [
@@ -174,6 +289,13 @@ export default function MembersPage() {
         action={
           <div className="flex gap-3">
             <button
+              onClick={() => { setShowImport(!showImport); setImportError(''); setImportResult(null); }}
+              className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all cursor-pointer shadow-sm text-slate-700 dark:text-slate-350"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Import Members
+            </button>
+            <button
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all cursor-pointer shadow-sm text-slate-700 dark:text-slate-350"
             >
@@ -190,6 +312,77 @@ export default function MembersPage() {
           </div>
         }
       />
+
+      {showImport && (
+        <CardWrapper className="p-5 space-y-4 border-l-4 border-indigo-500">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Bulk Member Import</h3>
+              <p className="text-xs text-slate-500 mt-1">CSV/JSON rows are imported through the normal registration logic, including automatic savings account creation.</p>
+            </div>
+            <button onClick={downloadImportSample} className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white">
+              Download Sample CSV
+            </button>
+          </div>
+
+          {importError && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">{importError}</div>}
+          {importResult && (
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+              <p className="font-bold text-slate-800">Import completed: {importResult.created} created, {importResult.failed} failed.</p>
+              {importResult.failed > 0 && (
+                <div className="mt-2 max-h-40 overflow-auto space-y-1">
+                  {importResult.results.filter((r) => !r.success).map((r) => (
+                    <p key={r.row} className="text-rose-600">
+                      Row {r.row}: {r.message}{formatImportDetails(r.details) ? ` (${formatImportDetails(r.details)})` : ''}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Default Branch</label>
+              <select
+                value={importBranchId}
+                onChange={(e) => setImportBranchId(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950"
+              >
+                {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.branchName}</option>)}
+              </select>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-4 mb-1">CSV / JSON File</label>
+              <input
+                type="file"
+                accept=".csv,.json,text/csv,application/json"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  file.text().then(loadImportText);
+                }}
+                className="w-full text-xs"
+              />
+              <button
+                onClick={submitImport}
+                disabled={importing || importRows.length === 0}
+                className="mt-4 w-full px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold disabled:opacity-50"
+              >
+                {importing ? 'Importing...' : `Import ${importRows.length} Members`}
+              </button>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Paste CSV / JSON</label>
+              <textarea
+                rows={9}
+                onChange={(e) => loadImportText(e.target.value)}
+                placeholder="Paste CSV with headers here..."
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 font-mono"
+              />
+              <p className="text-[10px] text-slate-400 mt-2">Manual member numbers can be supplied in `memberNo`; use digits only, for example `101`, and the system stores it as `NCS-0101`.</p>
+            </div>
+          </div>
+        </CardWrapper>
+      )}
 
       <CardWrapper className="p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">

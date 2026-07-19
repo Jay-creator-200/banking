@@ -90,13 +90,19 @@ export class LoanAccountService extends BaseService {
       await application.save({ session });
 
       // Post accounting journal voucher
-      // Find account heads (Loan Receivable & Cash In Hand)
+      // Find account heads (Loan Receivable & payout source)
       const loanReceivableHead = await accountHeadRepository.findOne({ code: '12001' });
       const cashHead = await accountHeadRepository.findOne({ code: '11001' });
+      const bankHead = await accountHeadRepository.findOne({ code: '11002' });
+      const savingsLiabilityHead = await accountHeadRepository.findOne({ code: '21001' });
+      const disbursementMode = (validated.disbursementMode || '').toUpperCase();
+      const payoutHead = disbursementMode === 'ACCOUNT_CREDIT'
+        ? savingsLiabilityHead
+        : (disbursementMode === 'CASH' ? cashHead : (bankHead || cashHead));
 
-      if (loanReceivableHead && cashHead) {
+      if (loanReceivableHead && payoutHead) {
         await ledgerService.createVoucher({
-          voucherType: 'PAYMENT',
+          voucherType: disbursementMode === 'CASH' ? 'PAYMENT' : 'JOURNAL',
           branchId: application.branchId.toString(),
           narration: `Loan disbursement — ${loanNo}`,
           entries: [
@@ -108,10 +114,10 @@ export class LoanAccountService extends BaseService {
               narration: `Loan principal disbursed — ${loanNo}`,
             },
             {
-              accountHeadId: cashHead._id.toString(),
+              accountHeadId: payoutHead._id.toString(),
               debit: 0,
               credit: principal,
-              narration: `Cash paid out for loan — ${loanNo}`,
+              narration: `${validated.disbursementMode} payout for loan — ${loanNo}`,
             },
           ],
         }, userId, session);

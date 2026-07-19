@@ -8,6 +8,14 @@ import { createVoucherSchema } from '../schemas/journal-voucher.schema.js';
 import { AppError } from '../utils/error-handler.js';
 import mongoose from 'mongoose';
 
+const BANK_PAYMENT_MODES = ['CHEQUE', 'UPI', 'RTGS', 'ONLINE'];
+const DEPOSIT_TRANSFER_TYPES = [
+  'RD_DEPOSIT_TRANSFER',
+  'FD_DEPOSIT_TRANSFER',
+  'DDS_DEPOSIT_TRANSFER',
+  'MIS_DEPOSIT_TRANSFER',
+];
+
 export class LedgerService extends BaseService {
   constructor() {
     super(journalVoucherRepository);
@@ -154,7 +162,10 @@ export class LedgerService extends BaseService {
       const entries = [];
 
       // 1. Resolve Debit Head
-      const debitCode = rule.debitCode;
+      const paymentMode = (transaction.paymentMode || '').toUpperCase();
+      const isExternalDepositPayment = DEPOSIT_TRANSFER_TYPES.includes(transaction.transactionType)
+        && BANK_PAYMENT_MODES.includes(paymentMode);
+      const debitCode = isExternalDepositPayment ? '11002' : rule.debitCode;
       const debitHead = await accountHeadRepository.findOne({ code: debitCode });
       if (!debitHead) {
         throw AppError.notFound(`Debit Account Head code ${debitCode} not found in Chart of Accounts.`);

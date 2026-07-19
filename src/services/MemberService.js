@@ -107,7 +107,7 @@ export class MemberService extends BaseService {
         {
           memberId: member._id.toString(),
           branchId: validatedFields.branchId.toString(),
-          accountType: validatedFields.memberCategory === 'senior_citizen' ? 'senior_citizen' : (validatedFields.memberCategory === 'staff' ? 'staff' : 'regular'),
+          accountType: 'regular',
           openingDeposit: 0,
         },
         userId,
@@ -200,7 +200,7 @@ export class MemberService extends BaseService {
         accountId: member.memberNo,
         transactionType: 'MEMBERSHIP_FEE',
         paymentMode: 'CASH',
-        amount: 100, // Standard membership registration fee
+        amount: 10, // Standard membership registration fee
         narration: `Automated registration membership fee for ${member.fullName} (${member.memberNo})`,
       },
       userId,

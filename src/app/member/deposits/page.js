@@ -75,7 +75,7 @@ export default function MemberDeposits() {
     { id: 'fd', label: 'Fixed Deposits', count: data?.fds?.length || 0 },
     { id: 'rd', label: 'Recurring Deposits', count: data?.rds?.length || 0 },
     { id: 'dds', label: 'Daily Deposits', count: data?.dds?.length || 0 },
-    { id: 'mis', label: 'Monthly Income', count: data?.mis?.length || 0 },
+    { id: 'mis', label: 'Monthly Investment', count: data?.mis?.length || 0 },
   ];
 
   return (
@@ -275,7 +275,7 @@ export default function MemberDeposits() {
 
         {activeTab === 'mis' && (
           (!data?.mis || data.mis.length === 0) ? (
-            <div className="p-12 text-center text-xs text-slate-500">No active Monthly Income Scheme portfolios found.</div>
+            <div className="p-12 text-center text-xs text-slate-500">No active Monthly Investment Scheme portfolios found.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">

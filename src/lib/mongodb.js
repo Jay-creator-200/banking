@@ -13,6 +13,7 @@ if (typeof window === 'undefined' && process.env.NEXT_RUNTIME !== 'edge') {
 }
 
 const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_DIRECT_URI = process.env.MONGODB_DIRECT_URI;
 
 if (!MONGODB_URI) {
   throw new Error(
@@ -44,17 +45,17 @@ export async function dbConnect() {
     await dnsPromise;
   }
 
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      // Optimized connection pool settings for serverless environments (Vercel)
-      maxPoolSize: 10,
-      minPoolSize: 2,
-      connectTimeoutMS: 15000,
-      socketTimeoutMS: 45000,
-    };
+  const opts = {
+    bufferCommands: false,
+    // Optimized connection pool settings for serverless environments (Vercel)
+    maxPoolSize: 10,
+    minPoolSize: 2,
+    connectTimeoutMS: 15000,
+    socketTimeoutMS: 45000,
+  };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+  const connectWithUri = (uri) =>
+    mongoose.connect(uri, opts).then((mongooseInstance) => {
       // Register global event listeners for database connections
       mongoose.connection.on('connected', () => {
         console.log('MongoDB connection successfully established.');
@@ -69,6 +70,23 @@ export async function dbConnect() {
       });
 
       return mongooseInstance;
+    });
+
+  if (!cached.promise) {
+    cached.promise = connectWithUri(MONGODB_URI).catch(async (error) => {
+      const isSrvDnsFailure =
+        error?.code === 'ECONNREFUSED' &&
+        typeof error?.hostname === 'string' &&
+        error.hostname.startsWith('_mongodb._tcp.');
+
+      if (!isSrvDnsFailure || !MONGODB_DIRECT_URI) {
+        throw error;
+      }
+
+      console.warn(
+        'MongoDB SRV DNS lookup failed locally. Retrying with MONGODB_DIRECT_URI fallback.'
+      );
+      return connectWithUri(MONGODB_DIRECT_URI);
     });
   }
 

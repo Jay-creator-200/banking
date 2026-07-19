@@ -121,8 +121,30 @@ const MemberSchema = new mongoose.Schema({
   memberCategory: {
     type: String,
     required: true,
-    enum: ['general', 'senior_citizen', 'staff', 'farmer', 'business'],
+    enum: ['general', 'obc', 'sc', 'st'],
     default: 'general',
+    lowercase: true,
+    trim: true,
+  },
+  otherBankName: {
+    type: String,
+    trim: true,
+  },
+  otherBankBranch: {
+    type: String,
+    trim: true,
+  },
+  otherBankAccountNumber: {
+    type: String,
+    trim: true,
+  },
+  otherBankIfscCode: {
+    type: String,
+    uppercase: true,
+    trim: true,
+  },
+  upiId: {
+    type: String,
     lowercase: true,
     trim: true,
   },
@@ -159,6 +181,16 @@ const MemberSchema = new mongoose.Schema({
 });
 
 MemberSchema.plugin(baseSchemaPlugin);
+
+const existingMemberModel = mongoose.models.Member;
+const existingCategoryValues = existingMemberModel?.schema?.path('memberCategory')?.enumValues || [];
+const hasCurrentCategorySchema = ['general', 'obc', 'sc', 'st'].every((value) =>
+  existingCategoryValues.includes(value)
+);
+
+if (existingMemberModel && !hasCurrentCategorySchema) {
+  mongoose.deleteModel('Member');
+}
 
 const Member = mongoose.models.Member || mongoose.model('Member', MemberSchema);
 

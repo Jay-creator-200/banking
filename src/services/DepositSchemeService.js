@@ -25,7 +25,17 @@ export class DepositSchemeService extends BaseService {
 
   async updateScheme(id, data, userId) {
     const validated = this.validate(updateDepositSchemeSchema, data);
-    return this.update(id, validated, null, userId);
+    const payload = { ...validated };
+
+    if (payload.schemeCode) {
+      payload.schemeCode = payload.schemeCode.toUpperCase().trim();
+      const existing = await this.repository.findOne({ schemeCode: payload.schemeCode });
+      if (existing && existing._id.toString() !== id.toString()) {
+        throw AppError.conflict(`Scheme with code ${payload.schemeCode} already exists`);
+      }
+    }
+
+    return this.update(id, payload, null, userId);
   }
 }
 

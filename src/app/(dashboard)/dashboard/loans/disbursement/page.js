@@ -102,6 +102,8 @@ export default function DisbursementPage() {
                 <option value="CASH">Cash</option>
                 <option value="TRANSFER">Bank Transfer</option>
                 <option value="ACCOUNT_CREDIT">Account Credit</option>
+                <option value="RTGS">RTGS</option>
+                <option value="ONLINE">Online</option>
               </select>
             </Field>
             {form.disbursementMode === 'CASH' && sessions.length > 0 && (

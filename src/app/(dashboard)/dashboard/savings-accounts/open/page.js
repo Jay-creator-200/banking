@@ -415,6 +415,8 @@ export default function OpenSavingsAccountPage() {
                   <option value="TRANSFER">Transfer Voucher</option>
                   <option value="CHEQUE">Cheque Clearance</option>
                   <option value="UPI">UPI Payment</option>
+                  <option value="RTGS">RTGS</option>
+                  <option value="ONLINE">Online</option>
                 </select>
               </div>
             )}

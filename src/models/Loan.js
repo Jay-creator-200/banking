@@ -106,7 +106,7 @@ const LoanSchema = new mongoose.Schema({
   },
   disbursementMode: {
     type: String,
-    enum: ['CASH', 'TRANSFER', 'ACCOUNT_CREDIT'],
+    enum: ['CASH', 'TRANSFER', 'ACCOUNT_CREDIT', 'RTGS', 'ONLINE'],
     default: 'CASH',
   },
   disbursementTransactionId: {
@@ -126,6 +126,13 @@ const LoanSchema = new mongoose.Schema({
 });
 
 LoanSchema.plugin(baseSchemaPlugin);
+
+const existingLoanModel = mongoose.models.Loan;
+const existingDisbursementModes = existingLoanModel?.schema?.path('disbursementMode')?.enumValues || [];
+const hasCurrentDisbursementModeSchema = ['RTGS', 'ONLINE'].every((value) => existingDisbursementModes.includes(value));
+if (existingLoanModel && !hasCurrentDisbursementModeSchema) {
+  mongoose.deleteModel('Loan');
+}
 
 const Loan = mongoose.models.Loan || mongoose.model('Loan', LoanSchema);
 

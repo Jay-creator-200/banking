@@ -188,6 +188,10 @@ export default function FDAccountsPage() {
                 <select className={InputClass} value={form.fundingSource} onChange={e => setForm({ ...form, fundingSource: e.target.value })}>
                   <option value="CASH">Cash</option>
                   <option value="TRANSFER">Savings Transfer</option>
+                  <option value="CHEQUE">Cheque</option>
+                  <option value="UPI">UPI</option>
+                  <option value="RTGS">RTGS</option>
+                  <option value="ONLINE">Online</option>
                 </select></div>
               <div><label className={LabelClass}>Start Date</label>
                 <input type="date" className={InputClass} value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} /></div>

@@ -56,7 +56,7 @@ async function runTests() {
     await Member.deleteMany({ email: 'test.deposit@noblebank.coop' });
 
     // Resolve branch and users
-    const branch = await Branch.findOne({ branchCode: 'JPR' });
+    const branch = await Branch.findOne({ branchCode: 'NCS-JP-001' });
     const manager = await User.findOne({ username: 'jaipur_manager' });
     const cashier = await User.findOne({ username: 'cashier_raj' });
 

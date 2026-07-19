@@ -36,7 +36,7 @@ export const collectRDInstallmentSchema = z.object({
   rdAccountId: z.string().min(1, 'RD Account ID is required'),
   installmentNo: z.number().min(1, 'Installment number is required'),
   amount: z.number().min(0.01, 'Collection amount must be positive'),
-  paymentMode: z.enum(['CASH', 'TRANSFER', 'UPI', 'CHEQUE']).default('CASH'),
+  paymentMode: z.enum(['CASH', 'TRANSFER', 'UPI', 'CHEQUE', 'RTGS', 'ONLINE']).default('CASH'),
 });
 
 export const openFDAccountSchema = z.object({
@@ -61,7 +61,7 @@ export const openDDSAccountSchema = z.object({
 export const collectDDSAmountSchema = z.object({
   ddsAccountId: z.string().min(1, 'DDS Account ID is required'),
   amount: z.number().min(0.01, 'Amount must be positive'),
-  paymentMode: z.enum(['CASH', 'TRANSFER', 'UPI', 'CHEQUE']).default('CASH'),
+  paymentMode: z.enum(['CASH', 'TRANSFER', 'UPI', 'CHEQUE', 'RTGS', 'ONLINE']).default('CASH'),
 });
 
 export const openMISAccountSchema = z.object({

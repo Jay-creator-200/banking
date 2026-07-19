@@ -70,8 +70,8 @@ export async function DELETE(req, { params }) {
     const original = await branchService.findById(id);
     if (!original) throw AppError.notFound('Branch record not found');
 
-    // Protect HO branch from deletion
-    if (original.branchCode === 'HO') {
+    // Protect Head Office branch from deletion
+    if (original.branchCode === 'HO' || original.branchCode === 'NCS-HO-001') {
       throw AppError.badRequest('The Head Office branch is protected and cannot be deleted.');
     }
 

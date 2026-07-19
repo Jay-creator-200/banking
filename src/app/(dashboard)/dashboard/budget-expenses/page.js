@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import PageHeader from '@/components/shared/PageHeader.jsx';
 import CardWrapper from '@/components/shared/CardWrapper.jsx';
 import LoadingSpinner from '@/components/shared/LoadingSpinner.jsx';
 import StatusBadge from '@/components/shared/StatusBadge.jsx';
 import Modal from '@/components/shared/Modal.jsx';
 import FormWrapper from '@/components/shared/FormWrapper.jsx';
-import { Coins, Plus, CheckCircle, XCircle, TrendingUp, HelpCircle, DollarSign, Wallet } from 'lucide-react';
+import { Coins, Plus, CheckCircle, XCircle, TrendingUp, HelpCircle, DollarSign, Wallet, Printer } from 'lucide-react';
 
 export default function BudgetExpensesPage() {
   const [activeTab, setActiveTab] = useState('expenses');
@@ -209,27 +210,28 @@ export default function BudgetExpensesPage() {
       <PageHeader
         title="Budgets & Expenditure Desk"
         subtitle="Departmental budget planning, operational expenses logging, and teller cash payout checkouts."
-      >
-        <div className="flex gap-2">
-          {activeTab === 'expenses' ? (
-            <button
-              onClick={() => setIsExpenseModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold bg-indigo-650 text-white rounded-xl hover:bg-indigo-700 transition-all cursor-pointer shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Log Expense
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsBudgetModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold bg-emerald-650 text-white rounded-xl hover:bg-emerald-700 transition-all cursor-pointer shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Allocate Budget
-            </button>
-          )}
-        </div>
-      </PageHeader>
+        action={
+          <div className="flex gap-2">
+            {activeTab === 'expenses' ? (
+              <button
+                onClick={() => setIsExpenseModalOpen(true)}
+                className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold bg-indigo-650 text-white rounded-xl hover:bg-indigo-700 transition-all cursor-pointer shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Log Expense
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsBudgetModalOpen(true)}
+                className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold bg-emerald-650 text-white rounded-xl hover:bg-emerald-700 transition-all cursor-pointer shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Allocate Budget
+              </button>
+            )}
+          </div>
+        }
+      />
 
       {/* Control Banner */}
       <CardWrapper className="p-4 flex items-center justify-between gap-3 flex-wrap">
@@ -332,7 +334,9 @@ export default function BudgetExpensesPage() {
                             Mark Paid
                           </button>
                         ) : e.approvalStatus === 'PAID' ? (
-                          <span className="text-[10px] text-slate-450 italic">Paid via JV</span>
+                          <Link href={`/dashboard/receipts/expense/${e._id}`} className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600">
+                            <Printer className="w-3.5 h-3.5" /> Receipt
+                          </Link>
                         ) : (
                           <span className="text-[10px] text-slate-450 italic">Pending approval</span>
                         )}

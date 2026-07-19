@@ -83,6 +83,15 @@ export default function VoucherDetailPage() {
       <PageHeader
         title={`Voucher ${voucher.voucherNo}`}
         subtitle={`Double-Entry Bookkeeping Record`}
+        action={
+          <Link
+            href={`/dashboard/receipts/voucher/${voucher._id}`}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all cursor-pointer shadow-sm"
+          >
+            <Receipt className="w-4 h-4" />
+            Print Receipt
+          </Link>
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

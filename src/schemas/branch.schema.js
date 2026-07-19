@@ -6,9 +6,9 @@ export const createBranchSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .min(2, { message: 'Branch code must be at least 2 characters long' })
-    .max(10, { message: 'Branch code cannot exceed 10 characters' })
-    .regex(/^[A-Z0-9]+$/, { message: 'Branch code can only contain alphanumeric uppercase characters' }),
+    .regex(/^NCS-[A-Z]{2}-\d{3}$/, {
+      message: 'Branch code must follow format NCS-UD-001',
+    }),
   branchName: z
     .string()
     .trim()

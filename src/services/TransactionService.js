@@ -9,6 +9,20 @@ import { AppError } from '../utils/error-handler.js';
 import mongoose from 'mongoose';
 import cashSessionService from './CashSessionService.js';
 
+const TRANSFER_DEPOSIT_TYPES = [
+  'RD_DEPOSIT_TRANSFER',
+  'FD_DEPOSIT_TRANSFER',
+  'DDS_DEPOSIT_TRANSFER',
+  'MIS_DEPOSIT_TRANSFER',
+];
+
+const isSavingsTransferDeposit = (transaction) => (
+  TRANSFER_DEPOSIT_TYPES.includes(transaction.transactionType)
+  && transaction.paymentMode === 'TRANSFER'
+  && transaction.referenceNo
+  && transaction.referenceNo !== 'Initial Funding'
+);
+
 export class TransactionService extends BaseService {
   constructor() {
     super(transactionRepository);
@@ -37,11 +51,9 @@ export class TransactionService extends BaseService {
 
       // Check for savings withdrawal hold
       const isSavingsWithdrawal = validatedData.transactionType === 'SAVINGS_WITHDRAWAL';
-      const isTransferDeposit = [
-        'RD_DEPOSIT_TRANSFER', 'FD_DEPOSIT_TRANSFER', 'DDS_DEPOSIT_TRANSFER', 'MIS_DEPOSIT_TRANSFER'
-      ].includes(validatedData.transactionType);
+      const isSavingsFundedDeposit = isSavingsTransferDeposit(validatedData);
 
-      if (isSavingsWithdrawal || isTransferDeposit) {
+      if (isSavingsWithdrawal || isSavingsFundedDeposit) {
         const savingsAccountNo = isSavingsWithdrawal ? validatedData.accountId : validatedData.referenceNo;
         if (!savingsAccountNo) {
           throw AppError.validation('Source savings account number is required for transfer.');
@@ -383,11 +395,9 @@ export class TransactionService extends BaseService {
 
       // Release hold on available balance if it was a savings withdrawal or transfer-based deposit funding
       const isSavingsWithdrawal = transaction.transactionType === 'SAVINGS_WITHDRAWAL';
-      const isTransferDeposit = [
-        'RD_DEPOSIT_TRANSFER', 'FD_DEPOSIT_TRANSFER', 'DDS_DEPOSIT_TRANSFER', 'MIS_DEPOSIT_TRANSFER'
-      ].includes(transaction.transactionType);
+      const isSavingsFundedDeposit = isSavingsTransferDeposit(transaction);
 
-      if (isSavingsWithdrawal || isTransferDeposit) {
+      if (isSavingsWithdrawal || isSavingsFundedDeposit) {
         const savingsAccountNo = isSavingsWithdrawal ? transaction.accountId : transaction.referenceNo;
         if (savingsAccountNo) {
           const SavingsAccount = mongoose.model('SavingsAccount');

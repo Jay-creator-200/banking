@@ -256,7 +256,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           // Resolve branch details
-          let branchCode = 'HO';
+          let branchCode = 'NCS-HO-001';
           let branchName = 'Head Office';
           try {
             if (user.branchId) {

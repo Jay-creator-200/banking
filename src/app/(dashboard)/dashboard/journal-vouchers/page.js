@@ -260,13 +260,22 @@ export default function JournalVouchersPage() {
     {
       header: 'Action',
       cell: ({ row }) => (
-        <Link
-          href={`/dashboard/journal-vouchers/${row._id}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-slate-600 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 rounded-lg transition"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          View Entries
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/dashboard/journal-vouchers/${row._id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-slate-600 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 rounded-lg transition"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            View
+          </Link>
+          <Link
+            href={`/dashboard/receipts/voucher/${row._id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+          >
+            <Receipt className="w-3.5 h-3.5" />
+            Print
+          </Link>
+        </div>
       ),
     },
   ];

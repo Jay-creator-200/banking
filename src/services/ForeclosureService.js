@@ -90,18 +90,18 @@ export class ForeclosureService extends BaseService {
       }, { session });
 
       // Post accounting
-      // Determine which debit account head to use based on payment mode.
-      // CASH → debit Cash-In-Hand (11001)
-      // TRANSFER / SAVINGS → debit Savings Deposit Liability (21001)
-      const isTransfer = ['TRANSFER', 'SAVINGS', 'ONLINE'].includes((validated.paymentMode || '').toUpperCase());
+      const paymentMode = (validated.paymentMode || '').toUpperCase();
+      const isCash = paymentMode === 'CASH';
+      const isTransfer = ['TRANSFER', 'SAVINGS'].includes(paymentMode) && validated.savingsAccountNo;
 
       const cashHead = await accountHeadRepository.findOne({ code: '11001' });
+      const bankHead = await accountHeadRepository.findOne({ code: '11002' });
       const savingsLiabilityHead = await accountHeadRepository.findOne({ code: '21001' });
       const loanReceivableHead = await accountHeadRepository.findOne({ code: '12001' });
       const interestIncomeHead = await accountHeadRepository.findOne({ code: '41001' });
       const penaltyIncomeHead = await accountHeadRepository.findOne({ code: '41002' });
 
-      const debitHead = isTransfer ? savingsLiabilityHead : cashHead;
+      const debitHead = isTransfer ? savingsLiabilityHead : (isCash ? cashHead : (bankHead || cashHead));
 
       const entries = [];
       if (debitHead) {

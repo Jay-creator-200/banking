@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   LibraryBig, Plus, RefreshCcw, Settings2, AlertTriangle,
   ChevronDown, ChevronUp, Search, CheckCircle, XCircle,
-  BadgePercent, Clock, TrendingUp, Layers
+  BadgePercent, Clock, TrendingUp, Layers, Pencil
 } from 'lucide-react';
 import CardWrapper from '@/components/shared/CardWrapper.jsx';
 import PageHeader from '@/components/shared/PageHeader.jsx';
@@ -48,6 +48,7 @@ export default function DepositSchemesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [editingSchemeId, setEditingSchemeId] = useState(null);
 
   const fetchSchemes = useCallback(async () => {
     setLoading(true);
@@ -66,20 +67,63 @@ export default function DepositSchemesPage() {
 
   useEffect(() => { fetchSchemes(); }, [fetchSchemes]);
 
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingSchemeId(null);
+    setFormError(null);
+  };
+
+  const openCreateForm = () => {
+    if (showForm && !editingSchemeId) {
+      setShowForm(false);
+      setFormError(null);
+      return;
+    }
+    resetForm();
+    setShowForm(true);
+  };
+
+  const startEdit = (scheme) => {
+    setEditingSchemeId(scheme._id);
+    setForm({
+      schemeCode: scheme.schemeCode || '',
+      schemeName: scheme.schemeName || '',
+      schemeType: scheme.schemeType || 'RD',
+      description: scheme.description || '',
+      interestType: scheme.interestType || 'simple',
+      interestRate: scheme.interestRate ?? 0,
+      compoundingFrequency: scheme.compoundingFrequency || 'monthly',
+      minimumTenure: scheme.minimumTenure ?? 1,
+      maximumTenure: scheme.maximumTenure ?? 1,
+      tenureUnit: scheme.tenureUnit || 'months',
+      minimumDepositAmount: scheme.minimumDepositAmount ?? 1,
+      maximumDepositAmount: scheme.maximumDepositAmount ?? 1,
+      installmentFrequency: scheme.installmentFrequency || 'monthly',
+      latePaymentPenaltyType: scheme.latePaymentPenaltyType || 'percentage',
+      latePaymentPenaltyValue: scheme.latePaymentPenaltyValue ?? 0,
+      allowedPrematureClosure: scheme.allowedPrematureClosure ?? true,
+      prematurePenaltyRate: scheme.prematurePenaltyRate ?? 0,
+      autoRenewalAllowed: scheme.autoRenewalAllowed ?? false,
+    });
+    setFormError(null);
+    setShowForm(true);
+    setExpandedId(scheme._id);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setFormError(null);
     try {
-      const res = await fetch('/api/deposit-schemes', {
-        method: 'POST',
+      const res = await fetch(editingSchemeId ? `/api/deposit-schemes/${editingSchemeId}` : '/api/deposit-schemes', {
+        method: editingSchemeId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message || 'Failed to create scheme');
+      if (!res.ok) throw new Error(json.error?.message || `Failed to ${editingSchemeId ? 'update' : 'create'} scheme`);
       setShowForm(false);
-      setForm(emptyForm);
+      resetForm();
       fetchSchemes();
     } catch (e) {
       setFormError(e.message);
@@ -103,24 +147,24 @@ export default function DepositSchemesPage() {
         title="Deposit Scheme Configuration"
         subtitle="Manage RD, FD, DDS & MIS scheme rules, interest rates, and penalty structures"
         icon={LibraryBig}
-        actions={
+        action={
           <button
-            onClick={() => { setShowForm(!showForm); setFormError(null); }}
+            onClick={openCreateForm}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all"
             id="btn-add-scheme"
           >
             <Plus className="w-4 h-4" />
-            New Scheme
+            {showForm && !editingSchemeId ? 'Close Form' : 'New Scheme'}
           </button>
         }
       />
 
-      {/* Create Scheme Panel */}
+      {/* Scheme Form Panel */}
       {showForm && (
         <CardWrapper className="p-6 space-y-5 border-l-4 border-indigo-500">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Settings2 className="w-4 h-4 text-indigo-500" />
-            Create New Deposit Scheme
+            {editingSchemeId ? 'Edit Deposit Scheme' : 'Create New Deposit Scheme'}
           </h3>
           {formError && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
@@ -239,9 +283,9 @@ export default function DepositSchemesPage() {
 
             <div className="flex gap-3 pt-2">
               <button type="submit" disabled={submitting} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50" id="btn-submit-scheme">
-                {submitting ? 'Creating...' : 'Create Scheme'}
+                {submitting ? (editingSchemeId ? 'Saving...' : 'Creating...') : (editingSchemeId ? 'Save Changes' : 'Create Scheme')}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-all">
+              <button type="button" onClick={() => { setShowForm(false); resetForm(); }} className="px-5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-all">
                 Cancel
               </button>
             </div>
@@ -323,6 +367,18 @@ export default function DepositSchemesPage() {
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{scheme.minimumTenure}–{scheme.maximumTenure} {scheme.tenureUnit}</p>
                       <p className="text-[10px] text-slate-400">tenure range</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEdit(scheme);
+                      }}
+                      className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 bg-white dark:bg-slate-900 transition-all"
+                      title="Edit scheme"
+                      aria-label={`Edit ${scheme.schemeName}`}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
                     {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                   </div>
                 </div>

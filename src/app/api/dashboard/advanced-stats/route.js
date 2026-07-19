@@ -3,8 +3,11 @@ import { successResponse, errorResponse } from '@/utils/api-response.js';
 import { AppError } from '@/utils/error-handler.js';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb.js';
+import AccountHead from '@/models/AccountHead.js';
+import Branch from '@/models/Branch.js';
 import LedgerEntry from '@/models/LedgerEntry.js';
 import Loan from '@/models/Loan.js';
+import Member from '@/models/Member.js';
 import SavingsAccount from '@/models/SavingsAccount.js';
 import FDAccount from '@/models/FDAccount.js';
 import RDAccount from '@/models/RDAccount.js';
@@ -25,7 +28,7 @@ export async function GET(req) {
     const matchBranch = branchId ? { branchId: new mongoose.Types.ObjectId(branchId) } : {};
 
     // Calculate total members, active savings account counts, and current branch name
-    const totalMembers = await mongoose.model('Member').countDocuments(
+    const totalMembers = await Member.countDocuments(
       branchId ? { branchId: new mongoose.Types.ObjectId(branchId), memberStatus: 'active' } : { memberStatus: 'active' }
     );
     const activeSavings = await SavingsAccount.countDocuments(
@@ -33,7 +36,7 @@ export async function GET(req) {
     );
     let branchName = 'Noble Cooperative Society';
     if (branchId) {
-      const branch = await mongoose.model('Branch').findById(branchId);
+      const branch = await Branch.findById(branchId);
       if (branch) {
         branchName = branch.branchName;
       }
@@ -45,7 +48,7 @@ export async function GET(req) {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    const cashHeads = await mongoose.model('AccountHead').find({ code: { $in: ['11001', '11002'] } });
+    const cashHeads = await AccountHead.find({ code: { $in: ['11001', '11002'] } });
     const cashHeadIds = cashHeads.map(h => h._id);
 
     const todayCashFlow = await LedgerEntry.aggregate([
@@ -112,8 +115,8 @@ export async function GET(req) {
     const depositLiability = savingsTotal + fdTotal + rdTotal + ddsTotal + misTotal;
 
     // 4. Interest Income & Expenses (All time cumulative or current fiscal year)
-    const interestIncomeHead = await mongoose.model('AccountHead').findOne({ code: '41001' });
-    const interestExpenseHead = await mongoose.model('AccountHead').findOne({ code: '51001' });
+    const interestIncomeHead = await AccountHead.findOne({ code: '41001' });
+    const interestExpenseHead = await AccountHead.findOne({ code: '51001' });
 
     let interestIncome = 0;
     if (interestIncomeHead) {

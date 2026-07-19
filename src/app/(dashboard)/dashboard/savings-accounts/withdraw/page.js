@@ -329,6 +329,8 @@ export default function SavingsWithdrawalPage() {
                   <option value="TRANSFER">Transfer Voucher</option>
                   <option value="CHEQUE">Cheque Withdrawal</option>
                   <option value="UPI">UPI Withdrawal</option>
+                  <option value="RTGS">RTGS</option>
+                  <option value="ONLINE">Online</option>
                 </select>
               </div>
 

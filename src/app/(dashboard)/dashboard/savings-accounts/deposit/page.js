@@ -298,6 +298,8 @@ export default function SavingsDepositPage() {
                   <option value="TRANSFER">Transfer Voucher</option>
                   <option value="CHEQUE">Cheque Clearance</option>
                   <option value="UPI">UPI Transaction</option>
+                  <option value="RTGS">RTGS</option>
+                  <option value="ONLINE">Online</option>
                 </select>
               </div>
 

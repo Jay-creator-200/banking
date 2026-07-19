@@ -99,8 +99,9 @@ async function seed() {
     // 1. Seed Branch (Head Office)
     console.log('Upserting Default Head Office Branch...');
     const defaultBranch = await Branch.findOneAndUpdate(
-      { branchCode: 'HO' },
+      { branchCode: 'NCS-HO-001' },
       {
+        branchCode: 'NCS-HO-001',
         branchName: 'Head Office',
         address: '121, Noble Cooperative Bank Towers, MG Road',
         city: 'Pune',

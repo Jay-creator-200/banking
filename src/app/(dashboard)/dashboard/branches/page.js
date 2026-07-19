@@ -218,7 +218,7 @@ export default function BranchesPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (!confirm('Are you sure you want to delete the selected branches? Head Office (HO) cannot be deleted.')) return;
+    if (!confirm('Are you sure you want to delete the selected branches? Head Office branch cannot be deleted.')) return;
     setBulkActionLoading(true);
     try {
       await Promise.all(selectedIds.map((id) => fetch(`/api/branches/${id}`, { method: 'DELETE' })));
@@ -292,7 +292,7 @@ export default function BranchesPage() {
     {
       header: 'Actions',
       cell: ({ row }) => {
-        const isHO = row.branchCode === 'HO';
+        const isHO = row.branchCode === 'HO' || row.branchCode === 'NCS-HO-001';
         return (
           <div className="flex gap-2">
             <button
@@ -428,11 +428,12 @@ export default function BranchesPage() {
                   className={`w-full px-3 py-2 text-sm rounded-xl border bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 ${
                     formErrors.branchCode ? 'border-rose-350 focus:ring-rose-200' : 'border-slate-200 dark:border-slate-800 focus:ring-indigo-100'
                   }`}
-                  placeholder="MUM01"
+                  placeholder="NCS-UD-001"
                   required
                   disabled={isEdit}
                 />
                 {formErrors.branchCode && <p className="text-xs text-rose-600 mt-1 font-medium">{formErrors.branchCode}</p>}
+                {!formErrors.branchCode && <p className="text-xs text-slate-400 mt-1">Format: NCS-UD-001</p>}
               </div>
 
               <div>

@@ -144,6 +144,10 @@ export default function DDSAccountsPage() {
             <select className={InputClass} value={collectForm.paymentMode} onChange={e => setCollectForm({ ...collectForm, paymentMode: e.target.value })} id="dds-collect-mode">
               <option value="CASH">Cash</option>
               <option value="TRANSFER">Transfer</option>
+              <option value="CHEQUE">Cheque</option>
+              <option value="UPI">UPI</option>
+              <option value="RTGS">RTGS</option>
+              <option value="ONLINE">Online</option>
             </select>
           </div>
           <div className="flex items-end">

@@ -72,7 +72,7 @@ const TransactionSchema = new mongoose.Schema({
   paymentMode: {
     type: String,
     required: [true, 'Payment mode is required'],
-    enum: ['CASH', 'TRANSFER', 'CHEQUE', 'UPI'],
+    enum: ['CASH', 'TRANSFER', 'CHEQUE', 'UPI', 'RTGS', 'ONLINE'],
     trim: true,
     uppercase: true,
   },
@@ -126,6 +126,13 @@ const TransactionSchema = new mongoose.Schema({
 });
 
 TransactionSchema.plugin(baseSchemaPlugin);
+
+const existingTransactionModel = mongoose.models.Transaction;
+const existingPaymentModes = existingTransactionModel?.schema?.path('paymentMode')?.enumValues || [];
+const hasCurrentPaymentModeSchema = ['RTGS', 'ONLINE'].every((value) => existingPaymentModes.includes(value));
+if (existingTransactionModel && !hasCurrentPaymentModeSchema) {
+  mongoose.deleteModel('Transaction');
+}
 
 const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { 
   Plus, 
   Search, 
@@ -11,7 +12,8 @@ import {
   Unlock, 
   X,
   Check,
-  UserPlus
+  UserPlus,
+  FileText
 } from 'lucide-react';
 
 import PageHeader from '@/components/shared/PageHeader.jsx';
@@ -54,6 +56,11 @@ export default function UsersPage() {
     password: '',
     roleId: '',
     branchId: '',
+    designation: '',
+    department: '',
+    joiningDate: '',
+    monthlySalary: 0,
+    employmentType: 'permanent',
     status: 'ACTIVE',
   });
   const [formErrors, setFormErrors] = useState({});
@@ -181,6 +188,11 @@ export default function UsersPage() {
       password: '',
       roleId: roles[0]?._id || '',
       branchId: branches[0]?._id || '',
+      designation: '',
+      department: '',
+      joiningDate: '',
+      monthlySalary: 0,
+      employmentType: 'permanent',
       status: 'ACTIVE',
     });
     setFormErrors({});
@@ -201,6 +213,11 @@ export default function UsersPage() {
       password: '', // Leave blank unless changing
       roleId: user.roleId?._id || user.roleId || '',
       branchId: user.branchId?._id || user.branchId || '',
+      designation: user.designation || '',
+      department: user.department || '',
+      joiningDate: user.joiningDate ? new Date(user.joiningDate).toISOString().slice(0, 10) : '',
+      monthlySalary: user.monthlySalary || 0,
+      employmentType: user.employmentType || 'permanent',
       status: user.status || 'ACTIVE',
     });
     setFormErrors({});
@@ -357,6 +374,13 @@ export default function UsersPage() {
             >
               {isLocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
             </button>
+            <Link
+              href={`/dashboard/staff/joining-letter/${row._id}`}
+              className="p-1.5 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg text-slate-500 hover:text-emerald-600 transition-colors cursor-pointer"
+              title="Joining Letter"
+            >
+              <FileText className="w-4 h-4" />
+            </Link>
             <button
               onClick={() => handleDeleteTrigger(row._id)}
               className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
@@ -611,6 +635,79 @@ export default function UsersPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">Staff HR & Payroll</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                    Designation
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.designation}
+                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    placeholder="Branch Manager"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    placeholder="Operations"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                    Joining Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.joiningDate}
+                    onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                    Monthly Salary
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.monthlySalary}
+                    onChange={(e) => setFormData({ ...formData, monthlySalary: parseFloat(e.target.value || 0) })}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                    Employment Type
+                  </label>
+                  <select
+                    value={formData.employmentType}
+                    onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
+                    className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="permanent">Permanent</option>
+                    <option value="probation">Probation</option>
+                    <option value="contract">Contract</option>
+                    <option value="temporary">Temporary</option>
+                  </select>
+                </div>
               </div>
             </div>
 

@@ -117,9 +117,10 @@ export class ExpenseService {
   /**
    * Execute Expense Payment and generate double-entry Accounting posting
    */
-  async payExpense(expenseId, userId) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  async payExpense(expenseId, userId, externalSession = null) {
+    const session = externalSession || (await mongoose.startSession());
+    const isLocalSession = !externalSession;
+    if (isLocalSession) session.startTransaction();
     try {
       const expense = await Expense.findById(expenseId).session(session);
       if (!expense) {
@@ -177,13 +178,17 @@ export class ExpenseService {
         { status: 'PAID', voucherId: voucher._id }
       );
 
-      await session.commitTransaction();
-      session.endSession();
+      if (isLocalSession) {
+        await session.commitTransaction();
+        session.endSession();
+      }
 
       return expense;
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
+      if (isLocalSession) {
+        await session.abortTransaction();
+        session.endSession();
+      }
       throw error;
     }
   }

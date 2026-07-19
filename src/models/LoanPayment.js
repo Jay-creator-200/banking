@@ -23,7 +23,7 @@ const LoanPaymentSchema = new mongoose.Schema({
   paymentMode: {
     type: String,
     required: true,
-    enum: ['CASH', 'TRANSFER', 'CHEQUE', 'UPI'],
+    enum: ['CASH', 'TRANSFER', 'CHEQUE', 'UPI', 'RTGS', 'ONLINE'],
     uppercase: true,
   },
   amount: {
@@ -76,6 +76,13 @@ const LoanPaymentSchema = new mongoose.Schema({
 });
 
 LoanPaymentSchema.plugin(baseSchemaPlugin);
+
+const existingLoanPaymentModel = mongoose.models.LoanPayment;
+const existingPaymentModes = existingLoanPaymentModel?.schema?.path('paymentMode')?.enumValues || [];
+const hasCurrentPaymentModeSchema = ['RTGS', 'ONLINE'].every((value) => existingPaymentModes.includes(value));
+if (existingLoanPaymentModel && !hasCurrentPaymentModeSchema) {
+  mongoose.deleteModel('LoanPayment');
+}
 
 const LoanPayment = mongoose.models.LoanPayment || mongoose.model('LoanPayment', LoanPaymentSchema);
 
